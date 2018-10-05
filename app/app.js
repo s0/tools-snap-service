@@ -49,7 +49,7 @@ app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
 
 app.post('/snap', (req, res) => {
   let sizeHtml = 0;
-  let fnMedia = 'screen'; // assume ppl want WYSIWYG screenshots, not print CSS
+  let fnMedia = (req.query.media === 'print') ? 'print' : 'screen';
   let fnHtml = '';
   let fnOutput = (req.query.output === 'png') ? 'png' : 'pdf';
   let fnFormat = 'A4';
@@ -143,6 +143,9 @@ app.post('/snap', (req, res) => {
           await page.setContent(fnHtml);
         }
 
+        // Set CSS Media
+        await page.emulateMedia(fnMedia);
+
         // PNG or PDF?
         if (fnOutput === 'png') {
           pngOptions.path = fnPath;
@@ -158,11 +161,6 @@ app.post('/snap', (req, res) => {
             await page.screenshot(pngOptions);
           }
         } else {
-          // @media(print) is default for Puppeteer PDF generation
-          if (fnMedia === 'screen') {
-            await page.emulateMedia('screen');
-          }
-
           await page.pdf({ path: fnPath, format: fnFormat });
         }
 

@@ -1,0 +1,8 @@
+# ignore npm deps
+app/node_modules
+
+# ignore docker stuff
+debian-snapper-nodejs/buildlog.txt
+debian-snapper-nodejs/Dockerfile
+tmp
+var

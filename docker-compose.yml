@@ -1,0 +1,21 @@
+version: "2.1"
+
+services:
+  snap:
+    image: unocha/debian-snapper-nodejs:8.11.4
+    hostname: ${PREFIX}-${STAGE}-print
+    volumes:
+      - "${BASEDIR}/app:/srv/www"
+      - "${BASEDIR}/tmp:/tmp"
+      - "${BASEDIR}/var/log:/var/log"
+      - "${BASEDIR}/var/log/pmlogs2:/root/.pm2/logs"
+    environment:
+      - DEBUG="*"
+      - PORT=${HTTP_PORT}
+      - NODE_ENV=dockerdev
+      - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+    ports:
+      - "${HTTP_ADDR}:${HTTP_PORT}:${HTTP_PORT}"
+    mem_limit: 2g
+    cpu_quota: 200000
+

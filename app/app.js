@@ -14,7 +14,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const async = require('async');
 const http = require('http');
-const https = require('https');
+// const https = require('https');
 const puppeteer = require('puppeteer');
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -48,20 +48,21 @@ app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
 });
 
 app.post('/snap', (req, res) => {
-  let sizeHtml = 0;
-  let fnHtml = '';
-  let fnWidth = (req.query.width) ? Number(req.query.width) : 800;
-  let fnHeight = (req.query.height) ? Number(req.query.height) : 600;
-  let fnMedia = (req.query.media === 'print') ? 'print' : 'screen';
-  let fnOutput = (req.query.output === 'png') ? 'png' : 'pdf';
-  let fnFormat = 'A4';
-  let fnPath = '';
-  let fnUrl = false;
-  let fnAuthUser = '';
-  let fnAuthPass = '';
-  let fnFragment = '';
-  let fnBackground = false;
   const startTime = Date.now();
+  let tmpPath = '';
+  let sizeHtml = 0;
+
+  const fnWidth = (req.query.width) ? Number(req.query.width) : 800;
+  const fnHeight = (req.query.height) ? Number(req.query.height) : 600;
+  const fnMedia = (req.query.media === 'print') ? 'print' : 'screen';
+  const fnOutput = (req.query.output === 'png') ? 'png' : 'pdf';
+  const fnFormat = 'A4';
+  const fnAuthUser = req.query.user || '';
+  const fnAuthPass = req.query.pass || '';
+  const fnFragment = req.query.frag || '';
+  const fnUrl = req.query.url || false;
+
+  let fnHtml = '';
 
   async.series([
     function validateRequest(cb) {
@@ -75,11 +76,11 @@ app.post('/snap', (req, res) => {
 
           sizeHtml = stats.size || 0;
           fnHtml = req.files.html.path;
-          fnPath = `${fnHtml}.${fnOutput}`;
+          tmpPath = `${fnHtml}.${fnOutput}`;
         });
       }
       else if (req.body && req.body.html && req.body.html.length) {
-        const tmpPath = `/tmp/snap-${Date.now()}.html`;
+        tmpPath = `/tmp/snap-${Date.now()}.html`;
         sizeHtml = req.body.html.length;
 
         fs.writeFile(tmpPath, req.body.html, (err) => {
@@ -88,19 +89,12 @@ app.post('/snap', (req, res) => {
             return cb(new Error('An error occurred while trying to validate the HTML post data.'));
           }
 
-          fnPath = `${tmpPath}.${fnOutput}`;
+          tmpPath = `${tmpPath}.${fnOutput}`;
         });
       }
       else if (req.query && req.query.url && req.query.url.length && (req.query.url.substr(0, 7) === 'http://' || req.query.url.substr(0, 8) === 'https://')) {
-        fnUrl = true;
-        fnHtml = req.query.url;
-        fnAuthUser = (req.query.user) ? req.query.user : '';
-        fnAuthPass = (req.query.pass) ? req.query.pass : '';
-        fnFragment = (req.query.frag) ? req.query.frag : '';
-
-        const digest = crypto.createHash('md5').update(fnHtml).digest('hex');
-
-        fnPath = `/tmp/snap-${Date.now()}-${digest}.${fnOutput}`;
+        const digest = crypto.createHash('md5').update(fnUrl).digest('hex');
+        tmpPath = `/tmp/snap-${Date.now()}-${digest}.${fnOutput}`;
       }
       else {
         const noCaseErrMsg = 'An HTML file was not uploaded or could not be accessed.';
@@ -111,9 +105,18 @@ app.post('/snap', (req, res) => {
       return cb(null, 'everything is fine');
     },
     function generateResponse(cb) {
+      /**
+       * Puppeteer code to generate PNG/PDF Snap.
+       */
       async function createSnap() {
-        let pngOptions = {};
-        let pdfOptions = {};
+        const pngOptions = {
+          path: tmpPath,
+        };
+
+        const pdfOptions = {
+          path: tmpPath,
+          format: fnFormat,
+        };
 
         // Process HTML file with puppeteer
         const browser = await puppeteer.launch({
@@ -136,12 +139,11 @@ app.post('/snap', (req, res) => {
           await page.authenticate({ username: fnAuthUser, password: fnAuthPass });
         }
 
-        // We need to load the HTML differently depending on whether it's local
-        // text in the POST or a URL in the querystring.
-        if (fnUrl === true) {
-          await page.goto(fnHtml);
-        }
-        else {
+        // We need to load the HTML differently depending on whether it's HTML
+        // in the POST or a URL in the querystring.
+        if (fnUrl) {
+          await page.goto(fnUrl);
+        } else {
           await page.setContent(fnHtml);
         }
 
@@ -151,54 +153,52 @@ app.post('/snap', (req, res) => {
         // Set CSS Media
         await page.emulateMedia(fnMedia);
 
-        // PNG or PDF?
+        // Output PNG or PDF?
         if (fnOutput === 'png') {
-          pngOptions.path = fnPath;
-          pngOptions.omitBackground = true;
-
-          // Whole document or fragment?
+          // Output whole document or DOM fragment?
           if (fnFragment) {
             pngOptions.omitBackground = true;
-            let fragment = await page.$(fnFragment);
+            const fragment = await page.$(fnFragment);
             await fragment.screenshot(pngOptions);
-          }
-          else {
+          } else {
             await page.screenshot(pngOptions);
           }
         } else {
-          await page.pdf({ path: fnPath, format: fnFormat });
+          await page.pdf(pdfOptions);
         }
 
         // Close tab
         await browser.close();
       }
 
+      /**
+       * Express response and tmp file cleanup.
+       */
       createSnap().then(() => {
         res.charset = 'utf-8';
 
         if (fnOutput === 'png') {
           res.contentType('image/png');
-          res.sendFile(fnPath, () => {
+          res.sendFile(tmpPath, () => {
             const duration = ((Date.now() - startTime) / 1000);
             res.end();
-            log.info({ duration, inputSize: sizeHtml }, `PNG ${fnPath} successfully generated for ${fnHtml} in ${duration} seconds.`);
-            return fs.unlink(fnPath, cb);
+            log.info({ duration, inputSize: sizeHtml }, `PNG ${tmpPath} successfully generated for ${fnHtml} in ${duration} seconds.`);
+            return fs.unlink(tmpPath, cb);
           });
-        }
-        else {
+        } else {
           res.contentType('application/pdf');
-          res.sendFile(fnPath, () => {
+          res.sendFile(tmpPath, () => {
             const duration = ((Date.now() - startTime) / 1000);
             res.end();
-            log.info({ duration, inputSize: sizeHtml }, `PDF ${fnPath} successfully generated for ${fnHtml} in ${duration} seconds.`);
-            return fs.unlink(fnPath, cb);
+            log.info({ duration, inputSize: sizeHtml }, `PDF ${tmpPath} successfully generated for ${fnHtml} in ${duration} seconds.`);
+            return fs.unlink(tmpPath, cb);
           });
         }
 
         // if (fnHtml.length && fnUrl === false) {
         //   return fs.unlink(fnHtml, cb);
         // }
-        // log.info(`Successfully removed input (${fnHtml}) and output (${fnPath}) files.`);
+        // log.info(`Successfully removed input (${fnHtml}) and output (${tmpPath}) files.`);
 
         // return cb(null, 'everything is fine');
       }).catch((err) => {

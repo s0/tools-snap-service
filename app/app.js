@@ -212,7 +212,7 @@ app.post('/snap', (req, res) => {
 
     if (err) {
       log.warn({ duration, inputSize: sizeHtml }, `Hardcopy generation failed for HTML ${fnHtml} in ${duration} seconds.`);
-      res.send(500, 'Error');
+      res.status(500).send(err);
     }
   });
 });

@@ -51,7 +51,7 @@ app.post('/snap', (req, res) => {
   let sizeHtml = 0;
   let fnMedia = 'screen'; // assume ppl want WYSIWYG screenshots, not print CSS
   let fnHtml = '';
-  let fnOutput = 'pdf';
+  let fnOutput = (req.query.output === 'png') ? 'png' : 'pdf';
   let fnFormat = 'A4';
   let fnPath = '';
   let fnUrl = false;
@@ -63,11 +63,6 @@ app.post('/snap', (req, res) => {
 
   async.series([
     function validateRequest(cb) {
-      // What output?
-      if (req.query && req.query.format && req.query.format === 'png') {
-        fnOutput = 'png';
-      }
-
       // Validate uploaded HTML file
       if (req.files && req.files.html && req.files.html.path) {
         fs.stat(req.files.html.path, (err, stats) => {

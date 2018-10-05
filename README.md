@@ -29,11 +29,6 @@ It will probably be necessary to use an app that helps you formulate and store c
 **Parameters:**
 
 - `url` — (**required**) the URL you want to render
-- `format` — (default `pdf`) specify `png` if you want a PNG image or `pdf` for PDF
+- `output` — (default `pdf`) specify `png` if you want a PNG image or `pdf` for PDF
 - `user` — (optional) HTTP Basic Authentication username
 - `pass` — (optional) HTTP Basic Authentication password
-
-**Examples:** (they won't work when you click because that's `GET` not `POST`)
-
-- http://localhost:8442/print?url=https%3A%2F%2Fexample.com
-- http://localhost:8442/print?url=https%3A%2F%2Freports.dev.ahconu.org%2Fcountry%2Fburundi&user=ocha&pass=dev

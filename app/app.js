@@ -49,8 +49,10 @@ app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
 
 app.post('/snap', (req, res) => {
   let sizeHtml = 0;
-  let fnMedia = (req.query.media === 'print') ? 'print' : 'screen';
   let fnHtml = '';
+  let fnWidth = (req.query.width) ? Number(req.query.width) : 800;
+  let fnHeight = (req.query.height) ? Number(req.query.height) : 600;
+  let fnMedia = (req.query.media === 'print') ? 'print' : 'screen';
   let fnOutput = (req.query.output === 'png') ? 'png' : 'pdf';
   let fnFormat = 'A4';
   let fnPath = '';
@@ -142,6 +144,9 @@ app.post('/snap', (req, res) => {
         else {
           await page.setContent(fnHtml);
         }
+
+        // Set viewport dimensions
+        await page.setViewport({ width: fnWidth, height: fnHeight });
 
         // Set CSS Media
         await page.emulateMedia(fnMedia);

@@ -28,10 +28,10 @@ It will probably be necessary to use an app that helps you formulate and store c
 
 **Parameters:**
 
-- `url` — (**required**) the URL you want to render
-- `output` — (default `pdf`) specify `png` if you want a PNG image or `pdf` for PDF
+- `url` — (**required**) the URL you want to render.
+- `output` — (default `pdf`) specify `png` if you want a PNG image or `pdf` for PDF.
 - `media` — (default `screen`) specify a CSS Media. Only other option is `print`.
 - `width` — (default `800`) specify a pixel value for the viewport width.
 - `height` — (default `600`) specify a pixel value for the viewport height.
-- `user` — (optional) HTTP Basic Authentication username
-- `pass` — (optional) HTTP Basic Authentication password
+- `user` — (optional) HTTP Basic Authentication username.
+- `pass` — (optional) HTTP Basic Authentication password.

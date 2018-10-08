@@ -61,6 +61,7 @@ app.post('/snap', (req, res) => {
   const fnAuthPass = req.query.pass || '';
   const fnFragment = req.query.frag || '';
   const fnFullPage = (fnFragment) ? false : true;
+  const fnScale = Number(req.query.scale) || 2;
   const fnUrl = req.query.url || false;
 
   let fnHtml = '';
@@ -150,7 +151,7 @@ app.post('/snap', (req, res) => {
         }
 
         // Set viewport dimensions
-        await page.setViewport({ width: fnWidth, height: fnHeight });
+        await page.setViewport({ width: fnWidth, height: fnHeight, deviceScaleFactor: fnScale });
 
         // Set CSS Media
         await page.emulateMedia(fnMedia);

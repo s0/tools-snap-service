@@ -60,6 +60,7 @@ app.post('/snap', (req, res) => {
   const fnAuthUser = req.query.user || '';
   const fnAuthPass = req.query.pass || '';
   const fnFragment = req.query.frag || '';
+  const fnFullPage = (fnFragment) ? false : true;
   const fnUrl = req.query.url || false;
 
   let fnHtml = '';
@@ -111,6 +112,7 @@ app.post('/snap', (req, res) => {
       async function createSnap() {
         const pngOptions = {
           path: tmpPath,
+          fullPage: fnFullPage,
         };
 
         const pdfOptions = {

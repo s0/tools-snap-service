@@ -168,7 +168,12 @@ app.post('/snap', (req, res) => {
           if (fnFragment) {
             pngOptions.omitBackground = true;
             const fragment = await page.$(fnFragment);
-            await fragment.screenshot(pngOptions);
+            if (fragment) {
+              await fragment.screenshot(pngOptions);
+            }
+            else {
+              throw new Error('Could not find the requested DOM fragment:' + fnFragment);
+            }
           } else {
             await page.screenshot(pngOptions);
           }
@@ -220,7 +225,7 @@ app.post('/snap', (req, res) => {
     const duration = ((Date.now() - startTime) / 1000);
 
     if (err) {
-      log.warn({ duration, inputSize: sizeHtml }, `Hardcopy generation failed for HTML ${fnHtml} in ${duration} seconds.`);
+      log.warn({ duration, inputSize: sizeHtml }, `Hardcopy generation failed for ${fnHtml} in ${duration} seconds.`);
       res.status(500).send(err);
     }
   });

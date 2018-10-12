@@ -124,11 +124,12 @@ app.post('/snap', (req, res) => {
           headerTemplate: ``, // default template is used if we don't provide empty string
           footerTemplate: `
             <footer style="width: 100%; font-size: 12px; margin: 0 16px; white-space: nowrap;">
-              <div style="position: relative; top: 14px;">
+              <div style="position: relative; top: 28px;">
                 Page <span class="pageNumber"></span> of <span class="totalPages"></span>
               </div>
               <div style="text-align: right;">
                 Date of Creation: <span>${moment().format('D MMM YYYY')}</span><br>
+                <span class="url"></span><br>
               </div>
             </footer>`,
           margin: { top: 0, bottom: '100px', left: 0, right: 0 },

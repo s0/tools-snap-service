@@ -119,6 +119,15 @@ app.post('/snap', (req, res) => {
         const pdfOptions = {
           path: tmpPath,
           format: fnFormat,
+          displayHeaderFooter: true,
+          headerTemplate: ``, // default template is used if we don't provide empty string
+          footerTemplate: `
+            <footer style="width: 100%; font-size: 12px; margin: 0 16px; white-space: nowrap; ">
+              <div>
+                Page <span class="pageNumber"></span> of <span class="totalPages"></span>
+              </div>
+            </footer>`,
+          margin: { top: 0, bottom: '40px', left: 0, right: 0 },
         };
 
         // Process HTML file with puppeteer

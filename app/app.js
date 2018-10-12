@@ -19,6 +19,7 @@ const puppeteer = require('puppeteer');
 const express = require('express');
 const bodyParser = require('body-parser');
 const methodOverride = require('method-override');
+const moment = require('moment');
 const log = require('./log');
 
 // We don't set this as a variable because it defines its own vars inside
@@ -122,12 +123,15 @@ app.post('/snap', (req, res) => {
           displayHeaderFooter: true,
           headerTemplate: ``, // default template is used if we don't provide empty string
           footerTemplate: `
-            <footer style="width: 100%; font-size: 12px; margin: 0 16px; white-space: nowrap; ">
-              <div>
+            <footer style="width: 100%; font-size: 12px; margin: 0 16px; white-space: nowrap;">
+              <div style="position: relative; top: 14px;">
                 Page <span class="pageNumber"></span> of <span class="totalPages"></span>
               </div>
+              <div style="text-align: right;">
+                Date of Creation: <span>${moment().format('D MMM YYYY')}</span><br>
+              </div>
             </footer>`,
-          margin: { top: 0, bottom: '40px', left: 0, right: 0 },
+          margin: { top: 0, bottom: '100px', left: 0, right: 0 },
         };
 
         // Process HTML file with puppeteer

@@ -34,5 +34,30 @@ It will probably be necessary to use an app that helps you formulate and store c
 - `width` — (default `800`) specify a pixel value for the viewport width.
 - `height` — (default `600`) specify a pixel value for the viewport height.
 - `scale` — (default `2`) specify a device scale (pixel density) to control resolution of PNG output.
+- `logo` — (optional) Display your site's logo in the header area of each page on your PDF. See [Custom Logos](#custom-logos) section for instructions on adding your logo to this repository.
 - `user` — (optional) HTTP Basic Authentication username.
 - `pass` — (optional) HTTP Basic Authentication password.
+
+## Custom Logos
+
+It's possible to include your site's logo in the header of a PDF. First, make a PR against this repository making the following two changes:
+
+* Add the file to `app/logos` directory.
+* Edit the `app/logos/_list.json` to include the parameter value you prefer, plus the filename.
+
+```json
+{
+  "ocha": {
+    "filename": "ocha.svg"
+  },
+  "hrinfo": {
+    "filename": "hr-info.svg"
+  }
+}
+```
+
+⚠️ **NOTE: this file MUST be valid JSON!** That means double-quoted strings and no trailing commas.
+
+⚠️ **NOTE: do not upload anything except SVG.** At the present time this is the only filetype we accept.
+
+Once your PR has been deployed, you can activate your logo on PDF Snaps using the `logo` parameter (see [API](#api)) and the value you entered into `logos/_list.json`.

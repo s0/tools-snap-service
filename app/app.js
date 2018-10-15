@@ -20,6 +20,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const methodOverride = require('method-override');
 const moment = require('moment');
+const mime = require('mime-types');
+const imgSize = require('image-size');
 const log = require('./log');
 
 // We don't set this as a variable because it defines its own vars inside
@@ -63,6 +65,7 @@ app.post('/snap', (req, res) => {
   const fnFragment = req.query.frag || '';
   const fnFullPage = (fnFragment) ? false : true;
   const fnScale = Number(req.query.scale) || 2;
+  const fnLogo = req.query.logo || false;
   const fnUrl = req.query.url || false;
 
   let fnHtml = '';
@@ -123,17 +126,66 @@ app.post('/snap', (req, res) => {
           displayHeaderFooter: true,
           headerTemplate: ``, // default template is used if we don't provide empty string
           footerTemplate: `
-            <footer style="width: 100%; font-size: 12px; margin: 0 16px; white-space: nowrap;">
-              <div style="position: relative; top: 28px;">
+            <footer class="pdf-footer">
+              <div class="pdf-footer__left">
                 Page <span class="pageNumber"></span> of <span class="totalPages"></span>
               </div>
-              <div style="text-align: right;">
+              <div class="pdf-footer__right">
                 Date of Creation: <span>${moment().format('D MMM YYYY')}</span><br>
                 <span class="url"></span><br>
               </div>
-            </footer>`,
-          margin: { top: 0, bottom: '100px', left: 0, right: 0 },
+            </footer>
+            <style type="text/css">
+              .pdf-footer {
+                box-sizing: border-box;
+                width: 100%;
+                font-size: 12px;
+                margin: 0 16px;
+                white-space: nowrap;
+              }
+              .pdf-footer__left {
+                position: relative;
+                top: 28px;
+              }
+              .pdf-footer__right {
+                text-align: right;
+              }
+            </style>`,
+          margin: { top: 0, bottom: '64px', left: 0, right: 0 },
         };
+
+        const logos = require('./logos/_list.json');
+
+        if (logos.hasOwnProperty(fnLogo)) {
+          const pdfLogoFile = 'logos/' + logos[fnLogo].filename;
+          const pdfLogoData = new Buffer(fs.readFileSync(pdfLogoFile, 'binary'));
+          const pdfLogoEncoded = `data:${mime.lookup(pdfLogoFile)};base64,${pdfLogoData.toString('base64')}`;
+          pdfOptions.margin.top = imgSize(pdfLogoFile).height + 32;
+          pdfOptions.headerTemplate = `
+            <header class="pdf-header">
+              <div class="pdf-header__logo-wrapper">
+                <img src="${pdfLogoEncoded}" alt="logo" class="pdf-header__logo">
+              </div>
+            </header>
+            <style type="text/css">
+              .pdf-header {
+                position: relative;
+                z-index: 1000;
+                box-sizing: border-box;
+                width: 100%;
+                font-size: 12px;
+                margin: 0 16px;
+                white-space: nowrap;
+              }
+              .pdf-header__logo-wrapper {
+                text-align: right;
+              }
+              .pdf-header__logo {
+                width: ${imgSize(pdfLogoFile).width}px;
+                height: ${imgSize(pdfLogoFile).height}px;
+              }
+            </style>`;
+        }
 
         // Process HTML file with puppeteer
         const browser = await puppeteer.launch({

@@ -34,9 +34,12 @@ It will probably be necessary to use an app that helps you formulate and store c
 - `width` — (default `800`) specify a pixel value for the viewport width.
 - `height` — (default `600`) specify a pixel value for the viewport height.
 - `scale` — (default `2`) specify a device scale (pixel density) to control resolution of PNG output.
+- `selector` — (optional) specify a CSS selector. Snap Service will return ONLY the first element which matches your selector.
 - `logo` — (optional) Display your site's logo in the header area of each page on your PDF. See [Custom Logos](#custom-logos) section for instructions on adding your logo to this repository.
 - `user` — (optional) HTTP Basic Authentication username.
 - `pass` — (optional) HTTP Basic Authentication password.
+
+We do our best to validate your input. When found to be invalid, we return **HTTP 422 Unprocessable Entity** with a reason that the validation failed.
 
 ## Custom Logos
 

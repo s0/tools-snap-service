@@ -15,10 +15,12 @@ const crypto = require('crypto');
 const async = require('async');
 const http = require('http');
 // const https = require('https');
-const puppeteer = require('puppeteer');
 const express = require('express');
 const bodyParser = require('body-parser');
 const methodOverride = require('method-override');
+const { query, validationResult } = require('express-validator/check');
+
+const puppeteer = require('puppeteer');
 const moment = require('moment');
 const mime = require('mime-types');
 const imgSize = require('image-size');
@@ -26,6 +28,10 @@ const log = require('./log');
 
 // We don't set this as a variable because it defines its own vars inside
 require('./config');
+
+// Load our list of custom logos. We do it early on in order to validate against
+// the possible values and give a more informative validation error.
+const logos = require('./logos/_list.json');
 
 // Set up the application
 const app = express();
@@ -50,23 +56,42 @@ app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
   res.send('Error');
 });
 
-app.post('/snap', (req, res) => {
+app.post('/snap', [
+  query('width', 'Must be an integer with no units').optional().isInt(),
+  query('height', 'Must be an integer with no units').optional().isInt(),
+  query('scale', 'Must be an integer in the range: 1-3').optional().isInt({ min: 1, max: 3 }),
+  query('media', 'Must be one of the following: print, screen').optional().isIn(['print', 'screen']),
+  query('output', 'Must be one of the following: png, pdf').optional().isIn(['png', 'pdf']),
+  query('selector', 'Must be a valid CSS selector.').optional().matches('-?[_a-zA-Z]+[_a-zA-Z0-9-]*'),
+  query('url', 'Must be a valid, fully-qualified URL').isURL({ require_protocol: true, disallow_auth: true }),
+  query('user', 'Must be an alphanumeric string').optional().isAlphanumeric(),
+  query('pass', 'Must be an alphanumeric string').optional().isAlphanumeric(),
+  query('logo', `Must be one of the following values: ${Object.keys(logos).join(', ')}. If you would like to use your site's logo with Snap Service, please read how to add it at https://github.com/UN-OCHA/tools-snap-service#custom-logos`).optional().isIn(Object.keys(logos)),
+], (req, res) => {
+  // Check for validation errors and return immediately if request was invalid.
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(422).json({ errors: errors.array() });
+  }
+
+  // Housekeeping
   const startTime = Date.now();
   let tmpPath = '';
   let sizeHtml = 0;
 
-  const fnWidth = (req.query.width) ? Number(req.query.width) : 800;
-  const fnHeight = (req.query.height) ? Number(req.query.height) : 600;
-  const fnMedia = (req.query.media === 'print') ? 'print' : 'screen';
-  const fnOutput = (req.query.output === 'png') ? 'png' : 'pdf';
+  // Assign validated querystring params to variables and set defaults.
+  const fnUrl = req.query.url || false;
+  const fnWidth = Number(req.query.width) || 800;
+  const fnHeight = Number(req.query.height) || 600;
+  const fnScale = Number(req.query.scale) || 2;
+  const fnMedia = req.query.media || 'screen';
+  const fnOutput = req.query.output || 'pdf';
   const fnFormat = 'A4';
   const fnAuthUser = req.query.user || '';
   const fnAuthPass = req.query.pass || '';
-  const fnFragment = req.query.frag || '';
-  const fnFullPage = (fnFragment) ? false : true;
-  const fnScale = Number(req.query.scale) || 2;
+  const fnSelector = req.query.selector || '';
+  const fnFullPage = (fnSelector) ? false : true;
   const fnLogo = req.query.logo || false;
-  const fnUrl = req.query.url || false;
 
   let fnHtml = '';
 
@@ -98,7 +123,7 @@ app.post('/snap', (req, res) => {
           tmpPath = `${tmpPath}.${fnOutput}`;
         });
       }
-      else if (req.query && req.query.url && req.query.url.length && (req.query.url.substr(0, 7) === 'http://' || req.query.url.substr(0, 8) === 'https://')) {
+      else if (req.query.url) {
         const digest = crypto.createHash('md5').update(fnUrl).digest('hex');
         tmpPath = `/tmp/snap-${Date.now()}-${digest}.${fnOutput}`;
       }
@@ -153,8 +178,6 @@ app.post('/snap', (req, res) => {
             </style>`,
           margin: { top: 0, bottom: '64px', left: 0, right: 0 },
         };
-
-        const logos = require('./logos/_list.json');
 
         if (logos.hasOwnProperty(fnLogo)) {
           const pdfLogoFile = 'logos/' + logos[fnLogo].filename;
@@ -228,9 +251,9 @@ app.post('/snap', (req, res) => {
         // Output PNG or PDF?
         if (fnOutput === 'png') {
           // Output whole document or DOM fragment?
-          if (fnFragment) {
+          if (fnSelector) {
             pngOptions.omitBackground = true;
-            const fragment = await page.$(fnFragment);
+            const fragment = await page.$(fnSelector);
             await fragment.screenshot(pngOptions);
           } else {
             await page.screenshot(pngOptions);
@@ -283,8 +306,8 @@ app.post('/snap', (req, res) => {
     const duration = ((Date.now() - startTime) / 1000);
 
     if (err) {
-      log.warn({ duration, inputSize: sizeHtml }, `Hardcopy generation failed for HTML ${fnHtml} in ${duration} seconds.`);
-      res.status(500).send(err);
+      log.warn({ duration, inputSize: sizeHtml }, `Hardcopy generation failed for HTML ${fnHtml} in ${duration} seconds. ${err}`);
+      res.status(500).send('' + err);
     }
   });
 });

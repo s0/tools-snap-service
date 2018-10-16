@@ -203,6 +203,9 @@ app.post('/snap', (req, res) => {
         // New Puppeteer tab
         const page = await browser.newPage();
 
+        // Set duration until Timeout
+        await page.setDefaultNavigationTimeout(30 * 1000);
+
         // Use HTTP auth if needed (for testing staging envs)
         if (fnAuthUser && fnAuthPass) {
           await page.authenticate({ username: fnAuthUser, password: fnAuthPass });

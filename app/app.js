@@ -33,6 +33,11 @@ require('./config');
 // the possible values and give a more informative validation error.
 const logos = require('./logos/_list.json');
 
+// It's impossible to regex a CSS selector so we'll assemble a list of the most
+// common characters. Feel free to add to this list if it's preventing a legitimate
+// selector from being used. The space at the beginning of this string is intentional.
+const allowedSelectorChars = ' #.[]()-_=+:~^*abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+
 // Set up the application
 const app = express();
 
@@ -63,7 +68,7 @@ app.post('/snap', [
   query('scale', 'Must be an integer in the range: 1-3').optional().isInt({ min: 1, max: 3 }),
   query('media', 'Must be one of the following: print, screen').optional().isIn([ 'print', 'screen' ]),
   query('output', 'Must be one of the following: png, pdf').optional().isIn([ 'png', 'pdf' ]),
-  query('selector', 'Must be a valid CSS selector.').optional().matches('-?[_a-zA-Z]+[_a-zA-Z0-9-]*'),
+  query('selector', `Must be a CSS selector made of the following characters: ${allowedSelectorChars}`).optional().isWhitelisted(allowedSelectorChars),
   query('user', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('pass', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('logo', `Must be one of the following values: ${Object.keys(logos).join(', ')}. If you would like to use your site's logo with Snap Service, please read how to add it at https://github.com/UN-OCHA/tools-snap-service#custom-logos`).optional().isIn(Object.keys(logos)),

@@ -57,13 +57,13 @@ app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
 });
 
 app.post('/snap', [
+  query('url', 'Must be a valid, fully-qualified URL').isURL({ require_protocol: true, disallow_auth: true }),
   query('width', 'Must be an integer with no units').optional().isInt(),
   query('height', 'Must be an integer with no units').optional().isInt(),
   query('scale', 'Must be an integer in the range: 1-3').optional().isInt({ min: 1, max: 3 }),
-  query('media', 'Must be one of the following: print, screen').optional().isIn(['print', 'screen']),
-  query('output', 'Must be one of the following: png, pdf').optional().isIn(['png', 'pdf']),
+  query('media', 'Must be one of the following: print, screen').optional().isIn([ 'print', 'screen' ]),
+  query('output', 'Must be one of the following: png, pdf').optional().isIn([ 'png', 'pdf' ]),
   query('selector', 'Must be a valid CSS selector.').optional().matches('-?[_a-zA-Z]+[_a-zA-Z0-9-]*'),
-  query('url', 'Must be a valid, fully-qualified URL').isURL({ require_protocol: true, disallow_auth: true }),
   query('user', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('pass', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('logo', `Must be one of the following values: ${Object.keys(logos).join(', ')}. If you would like to use your site's logo with Snap Service, please read how to add it at https://github.com/UN-OCHA/tools-snap-service#custom-logos`).optional().isIn(Object.keys(logos)),

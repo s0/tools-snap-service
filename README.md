@@ -34,9 +34,24 @@ It will probably be necessary to use an app that helps you formulate and store c
 - `width` — (default `800`) specify a pixel value for the viewport width.
 - `height` — (default `600`) specify a pixel value for the viewport height.
 - `scale` — (default `2`) specify a device scale (pixel density) to control resolution of PNG output.
+- `format` — (default `A4`) specify a PDF page format from one of the following options available within Puppeteer:
+  - `Letter`: 8.5in x 11in
+  - `Legal`: 8.5in x 14in
+  - `Tabloid`: 11in x 17in
+  - `Ledger`: 17in x 11in
+  - `A0`: 33.1in x 46.8in
+  - `A1`: 23.4in x 33.1in
+  - `A2`: 16.5in x 23.4in
+  - `A3`: 11.7in x 16.5in
+  - `A4`: 8.27in x 11.7in
+  - `A5`: 5.83in x 8.27in
+  - `A6`: 4.13in x 5.83in
+- `selector` — (optional) specify a CSS selector. Snap Service will return ONLY the first element which matches your selector.
 - `logo` — (optional) Display your site's logo in the header area of each page on your PDF. See [Custom Logos](#custom-logos) section for instructions on adding your logo to this repository.
 - `user` — (optional) HTTP Basic Authentication username.
 - `pass` — (optional) HTTP Basic Authentication password.
+
+We do our best to validate your input. When found to be invalid, we return **HTTP 422 Unprocessable Entity** and the response body will be a JSON object containing all failed validations.
 
 ## Custom Logos
 

@@ -38,6 +38,9 @@ const logos = require('./logos/_list.json');
 // selector from being used. The space at the beginning of this string is intentional.
 const allowedSelectorChars = ' #.[]()-_=+:~^*abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
+// PDF paper sizes
+const allowedFormats = ['Letter', 'Legal', 'Tabloid', 'Ledger', 'A0', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6'];
+
 // Set up the application
 const app = express();
 
@@ -69,6 +72,7 @@ app.post('/snap', [
   query('media', 'Must be one of the following: print, screen').optional().isIn([ 'print', 'screen' ]),
   query('output', 'Must be one of the following: png, pdf').optional().isIn([ 'png', 'pdf' ]),
   query('selector', `Must be a CSS selector made of the following characters: ${allowedSelectorChars}`).optional().isWhitelisted(allowedSelectorChars),
+  query('format', `Must be one of the following values: ${allowedFormats.join(', ')}`).optional().isIn(allowedFormats),
   query('user', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('pass', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('logo', `Must be one of the following values: ${Object.keys(logos).join(', ')}. If you would like to use your site's logo with Snap Service, please read how to add it at https://github.com/UN-OCHA/tools-snap-service#custom-logos`).optional().isIn(Object.keys(logos)),
@@ -91,7 +95,7 @@ app.post('/snap', [
   const fnScale = Number(req.query.scale) || 2;
   const fnMedia = req.query.media || 'screen';
   const fnOutput = req.query.output || 'pdf';
-  const fnFormat = 'A4';
+  const fnFormat = req.query.format || 'A4';
   const fnAuthUser = req.query.user || '';
   const fnAuthPass = req.query.pass || '';
   const fnSelector = req.query.selector || '';

@@ -50,6 +50,9 @@ It will probably be necessary to use an app that helps you formulate and store c
 - `logo` — (optional) Display your site's logo in the header area of each page on your PDF. See [Custom Logos](#custom-logos) section for instructions on adding your logo to this repository.
 - `user` — (optional) HTTP Basic Authentication username.
 - `pass` — (optional) HTTP Basic Authentication password.
+- `headerTitle` — (optional) Specify a Header Title for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
+- `headerSubtitle` — (optional) Specify a Header Subtitle for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
+- `headerDescription` — (optional) Specify a Header Description for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
 
 We do our best to validate your input. When found to be invalid, we return **HTTP 422 Unprocessable Entity** and the response body will be a JSON object containing all failed validations.
 

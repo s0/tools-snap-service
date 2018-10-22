@@ -24,6 +24,7 @@ const puppeteer = require('puppeteer');
 const moment = require('moment');
 const mime = require('mime-types');
 const imgSize = require('image-size');
+const he = require('he');
 const log = require('./log');
 
 // We don't set this as a variable because it defines its own vars inside
@@ -76,7 +77,13 @@ app.post('/snap', [
   query('user', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('pass', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('logo', `Must be one of the following values: ${Object.keys(logos).join(', ')}. If you would like to use your site's logo with Snap Service, please read how to add it at https://github.com/UN-OCHA/tools-snap-service#custom-logos`).optional().isIn(Object.keys(logos)),
+  query('headerTitle', 'Must be an alphanumeric string').optional().isAscii(),
+  query('headerSubtitle', 'Must be an alphanumeric string').optional().isAscii(),
+  query('headerDescription', 'Must be an alphanumeric string').optional().isAscii(),
 ], (req, res) => {
+  // debug
+  console.log('🔗', require('url').parse(req.url).query);
+
   // Check for validation errors and return immediately if request was invalid.
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -101,6 +108,9 @@ app.post('/snap', [
   const fnSelector = req.query.selector || '';
   const fnFullPage = (fnSelector) ? false : true;
   const fnLogo = req.query.logo || false;
+  const fnHeaderTitle = req.query.headerTitle || '';
+  const fnHeaderSubtitle = req.query.headerSubtitle || '';
+  const fnHeaderDescription = req.query.headerDescription || '';
 
   let fnHtml = '';
 
@@ -170,8 +180,12 @@ app.post('/snap', [
               </div>
             </footer>
             <style type="text/css">
-              .pdf-footer {
+              .pdf-footer,
+              .pdf-footer * {
                 box-sizing: border-box;
+              }
+
+              .pdf-footer {
                 width: 100%;
                 font-size: 12px;
                 margin: 0 16px;
@@ -192,25 +206,54 @@ app.post('/snap', [
           const pdfLogoFile = 'logos/' + logos[fnLogo].filename;
           const pdfLogoData = new Buffer(fs.readFileSync(pdfLogoFile, 'binary'));
           const pdfLogoEncoded = `data:${mime.lookup(pdfLogoFile)};base64,${pdfLogoData.toString('base64')}`;
-          pdfOptions.margin.top = imgSize(pdfLogoFile).height + 32;
+          pdfOptions.margin.top = imgSize(pdfLogoFile).height + 84;
           pdfOptions.headerTemplate = `
             <header class="pdf-header">
+              <div class="pdf-header__meta">
+                <div class="pdf-header__title">${he.encode(fnHeaderTitle)}</div>
+                <div class="pdf-header__subtitle">${he.encode(fnHeaderSubtitle)}</div>
+                <div class="pdf-header__description">${he.encode(fnHeaderDescription)}</div>
+              </div>
               <div class="pdf-header__logo-wrapper">
                 <img src="${pdfLogoEncoded}" alt="logo" class="pdf-header__logo">
               </div>
             </header>
             <style type="text/css">
+              .pdf-header,
+              .pdf-header * {
+                box-sizing: border-box;
+              }
+
               .pdf-header {
                 position: relative;
                 z-index: 1000;
-                box-sizing: border-box;
                 width: 100%;
                 font-size: 12px;
-                margin: 0 16px;
+                margin: 0 5mm 5mm;
+                padding-bottom: 10px;
+                border-bottom: 2px solid #4c8cca;
                 white-space: nowrap;
+
+                display: grid;
+                grid-template-areas: "logo meta";
+                grid-template-columns: ${imgSize(pdfLogoFile).width}px 2fr;
               }
+
+              .pdf-header__meta {
+                grid-area: meta;
+                font-size: inherit;
+                padding-left: 10px;
+                margin-left: 10px;
+                border-left: 2px solid #4c8cca;
+              }
+              .pdf-header__title {
+                font-size: 16px;
+              }
+              .pdf-header__subtitle {}
+              .pdf-header__description {}
+
               .pdf-header__logo-wrapper {
-                text-align: right;
+                grid-area: logo;
               }
               .pdf-header__logo {
                 width: ${imgSize(pdfLogoFile).width}px;
@@ -236,7 +279,7 @@ app.post('/snap', [
         const page = await browser.newPage();
 
         // Set duration until Timeout
-        await page.setDefaultNavigationTimeout(30 * 1000);
+        await page.setDefaultNavigationTimeout(60 * 1000);
 
         // Use HTTP auth if needed (for testing staging envs)
         if (fnAuthUser && fnAuthPass) {

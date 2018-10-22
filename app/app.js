@@ -77,6 +77,9 @@ app.post('/snap', [
   query('pass', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('logo', `Must be one of the following values: ${Object.keys(logos).join(', ')}. If you would like to use your site's logo with Snap Service, please read how to add it at https://github.com/UN-OCHA/tools-snap-service#custom-logos`).optional().isIn(Object.keys(logos)),
 ], (req, res) => {
+  // debug
+  console.log('🔗', require('url').parse(req.url).query);
+
   // Check for validation errors and return immediately if request was invalid.
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -236,7 +239,7 @@ app.post('/snap', [
         const page = await browser.newPage();
 
         // Set duration until Timeout
-        await page.setDefaultNavigationTimeout(30 * 1000);
+        await page.setDefaultNavigationTimeout(60 * 1000);
 
         // Use HTTP auth if needed (for testing staging envs)
         if (fnAuthUser && fnAuthPass) {

@@ -2,25 +2,6 @@
 
 Shared service to generate PNG/PDF snapshots of our websites.
 
-## Install / Develop
-
-The node container will do all the npm installation for you. No need to do it locally. Just run the Docker commands to get started.
-
-```bash
-# installation
-vim .env # set BASEDIR
-docker-compose build
-
-# development
-docker-compose up
-```
-
-Now you can `POST` to `localhost:8442/snap` and it should return Snaps to you.
-
-To use nodemon and have the service restart automatically as you edit the code, edit `debian-snapper-nodejs/run_node` and change the last command to `exec npm dev`.
-
-It will probably be necessary to use an app that helps you formulate and store common queries you want to test. Command line tools like `curl` are perfectly capable, but if you want something more visual try [Insomnia](https://insomnia.rest/). It lets you configure everything and save each query for repeated use.
-
 ## API
 
 - `POST` to `/snap`
@@ -56,7 +37,25 @@ It will probably be necessary to use an app that helps you formulate and store c
 
 We do our best to validate your input. When found to be invalid, we return **HTTP 422 Unprocessable Entity** and the response body will be a JSON object containing all failed validations.
 
-## Custom Logos
+## Using Snap Service on your website
+
+The Snap Service will inject a conditional class on the `<html>` element before generating your PNG/PDF request. The class indicates which format is being generated, so you can customize for either one, or both.
+
+```css
+html.snap--png .my-selector {
+  /* custom CSS for PNG snaps */
+}
+html.snap--pdf .my-selector {
+  /* custom CSS for PDF snaps */
+}
+html[class^='snap'] .my-selector {
+  /* custom CSS for any Snap */
+}
+```
+
+This class can be used anywhere in your CSS, including within Media Queries (e.g. `@media print`, `@media screen and (min-width: 700px)`, etc).
+
+### Custom Logos
 
 It's possible to include your site's logo in the header of a PDF. First, make a PR against this repository making the following two changes:
 
@@ -79,3 +78,22 @@ It's possible to include your site's logo in the header of a PDF. First, make a 
 ⚠️ **NOTE: do not upload anything except SVG.** At the present time this is the only filetype we accept.
 
 Once your PR has been deployed, you can activate your logo on PDF Snaps using the `logo` parameter (see [API](#api)) and the value you entered into `logos/_list.json`.
+
+## Install / Develop
+
+The node container will do all the npm installation for you. No need to do it locally. Just run the Docker commands to get started.
+
+```bash
+# installation
+vim .env # set BASEDIR
+docker-compose build
+
+# development
+docker-compose up
+```
+
+Now you can `POST` to `localhost:8442/snap` and it should return Snaps to you.
+
+To use nodemon and have the service restart automatically as you edit the code, edit `debian-snapper-nodejs/run_node` and change the last command to `exec npm dev`.
+
+It will probably be necessary to use an app that helps you formulate and store common queries you want to test. Command line tools like `curl` are perfectly capable, but if you want something more visual try [Insomnia](https://insomnia.rest/). It lets you configure everything and save each query for repeated use.

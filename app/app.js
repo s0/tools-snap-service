@@ -322,6 +322,18 @@ app.post('/snap', [
             await page.setContent(fnHtml);
           }
 
+          // Add a conditional class indicating what type of Snap is happening.
+          // Websites can use this class to apply customizations before the final
+          // asset (PNG/PDF) is generated.
+          //
+          // Note: page.evaluate() is a stringified injection into the runtime.
+          //       any arguments you need inside this function block have to be
+          //       explicitly passed instead of relying on closure.
+          await page.evaluate((snapType) => {
+            let dom = document.querySelector('html');
+            dom.classList.add(`snap--${snapType}`);
+          }, fnOutput);
+
           // Output PNG or PDF?
           if (fnOutput === 'png') {
             // Output whole document or DOM fragment?

@@ -113,6 +113,8 @@ app.post('/snap', [
   const fnHeaderDescription = req.query.headerDescription || '';
 
   let fnHtml = '';
+  let pngOptions = {};
+  let pdfOptions = {};
 
   async.series([
     function validateRequest(cb) {
@@ -159,163 +161,187 @@ app.post('/snap', [
        * Puppeteer code to generate PNG/PDF Snap.
        */
       async function createSnap() {
-        const pngOptions = {
-          path: tmpPath,
-          fullPage: fnFullPage,
-        };
+        try {
+          pngOptions = {
+            path: tmpPath,
+            fullPage: fnFullPage,
+          };
 
-        const pdfOptions = {
-          path: tmpPath,
-          format: fnFormat,
-          displayHeaderFooter: true,
-          headerTemplate: ``, // default template is used if we don't provide empty string
-          footerTemplate: `
-            <footer class="pdf-footer">
-              <div class="pdf-footer__left">
-                Page <span class="pageNumber"></span> of <span class="totalPages"></span>
-              </div>
-              <div class="pdf-footer__right">
-                Date of Creation: <span>${moment().format('D MMM YYYY')}</span><br>
-                <span class="url"></span><br>
-              </div>
-            </footer>
-            <style type="text/css">
-              .pdf-footer,
-              .pdf-footer * {
-                box-sizing: border-box;
-              }
+          pdfOptions = {
+            path: tmpPath,
+            format: fnFormat,
+            displayHeaderFooter: true,
+            headerTemplate: ``, // default template is used if we don't provide empty string
+            footerTemplate: `
+              <footer class="pdf-footer">
+                <div class="pdf-footer__left">
+                  Page <span class="pageNumber"></span> of <span class="totalPages"></span>
+                </div>
+                <div class="pdf-footer__right">
+                  Date of Creation: <span>${moment().format('D MMM YYYY')}</span><br>
+                  <span class="url"></span><br>
+                </div>
+              </footer>
+              <style type="text/css">
+                *,
+                *:before,
+                *:after {
+                  box-sizing: border-box;
+                }
 
-              .pdf-footer {
-                width: 100%;
-                font-size: 12px;
-                margin: 0 16px;
-                white-space: nowrap;
-              }
-              .pdf-footer__left {
-                position: relative;
-                top: 28px;
-              }
-              .pdf-footer__right {
-                text-align: right;
-              }
-            </style>`,
-          margin: { top: 0, bottom: '64px', left: 0, right: 0 },
-        };
+                .pdf-footer {
+                  width: 100%;
+                  font-size: 12px;
+                  margin: 0 7.5mm;
+                  white-space: nowrap;
 
-        if (logos.hasOwnProperty(fnLogo)) {
-          const pdfLogoFile = 'logos/' + logos[fnLogo].filename;
-          const pdfLogoData = new Buffer(fs.readFileSync(pdfLogoFile, 'binary'));
-          const pdfLogoEncoded = `data:${mime.lookup(pdfLogoFile)};base64,${pdfLogoData.toString('base64')}`;
-          pdfOptions.margin.top = imgSize(pdfLogoFile).height + 84;
-          pdfOptions.headerTemplate = `
-            <header class="pdf-header">
-              <div class="pdf-header__meta">
-                <div class="pdf-header__title">${he.encode(fnHeaderTitle)}</div>
-                <div class="pdf-header__subtitle">${he.encode(fnHeaderSubtitle)}</div>
-                <div class="pdf-header__description">${he.encode(fnHeaderDescription)}</div>
-              </div>
-              <div class="pdf-header__logo-wrapper">
-                <img src="${pdfLogoEncoded}" alt="logo" class="pdf-header__logo">
-              </div>
-            </header>
-            <style type="text/css">
-              .pdf-header,
-              .pdf-header * {
-                box-sizing: border-box;
-              }
+                  font-family: "Roboto Condensed", Roboto, serif;
+                  font-weight: 400;
+                  font-size: 12px;
+                }
+                .pdf-footer__left {
+                  position: relative;
+                  top: 28px;
+                }
+                .pdf-footer__right {
+                  text-align: right;
+                }
+              </style>`,
+            margin: { top: 0, bottom: '64px', left: 0, right: 0 },
+          };
 
-              .pdf-header {
-                position: relative;
-                z-index: 1000;
-                width: 100%;
-                font-size: 12px;
-                margin: 0 5mm 5mm;
-                padding-bottom: 10px;
-                border-bottom: 2px solid #4c8cca;
-                white-space: nowrap;
+          if (logos.hasOwnProperty(fnLogo)) {
+            const pdfLogoFile = __dirname + '/logos/' + logos[fnLogo].filename;
+            const pdfLogoData = new Buffer(fs.readFileSync(pdfLogoFile, 'binary'));
+            const pdfLogoEncoded = `data:${mime.lookup(pdfLogoFile)};base64,${pdfLogoData.toString('base64')}`;
 
-                display: grid;
-                grid-template-areas: "logo meta";
-                grid-template-columns: ${imgSize(pdfLogoFile).width}px 2fr;
-              }
+            pdfOptions.margin.top = imgSize(pdfLogoFile).height + 84;
+            pdfOptions.headerTemplate = `
+              <header class="pdf-header">
+                <div class="pdf-header__meta">
+                  <div class="pdf-header__title">${he.encode(fnHeaderTitle)}</div>
+                  <div class="pdf-header__subtitle">${he.encode(fnHeaderSubtitle)}</div>
+                  <div class="pdf-header__description">${he.encode(fnHeaderDescription)}</div>
+                </div>
+                <div class="pdf-header__logo-wrapper">
+                  <img src="${pdfLogoEncoded}" alt="logo" class="pdf-header__logo">
+                </div>
+              </header>
+              <style type="text/css">
+                *,
+                *:before,
+                *:after {
+                  box-sizing: border-box;
+                }
 
-              .pdf-header__meta {
-                grid-area: meta;
-                font-size: inherit;
-                padding-left: 10px;
-                margin-left: 10px;
-                border-left: 2px solid #4c8cca;
-              }
-              .pdf-header__title {
-                font-size: 16px;
-              }
-              .pdf-header__subtitle {}
-              .pdf-header__description {}
+                .pdf-header {
+                  width: 100%;
+                  margin: 0 7.5mm 7.5mm;
+                  padding-bottom: 10px;
+                  border-bottom: 2px solid #4c8cca;
 
-              .pdf-header__logo-wrapper {
-                grid-area: logo;
-              }
-              .pdf-header__logo {
-                width: ${imgSize(pdfLogoFile).width}px;
-                height: ${imgSize(pdfLogoFile).height}px;
-              }
-            </style>`;
-        }
+                  font-family: "Roboto Condensed", Roboto, serif;
+                  font-weight: 400;
+                  font-size: 12px;
+                  white-space: nowrap;
 
-        // Process HTML file with puppeteer
-        const browser = await puppeteer.launch({
-          executablePath: '/usr/bin/google-chrome',
-          args: [
-            '--headless',
-            '--disable-gpu',
-            '--remote-debugging-port=9222',
-            '--remote-debugging-address=0.0.0.0',
-            '--no-sandbox',
-            '--disable-dev-shm-usage',
-          ],
-        });
+                  display: grid;
+                  grid-template-areas: "logo meta";
+                  grid-template-columns: ${imgSize(pdfLogoFile).width}px 2fr;
+                }
 
-        // New Puppeteer tab
-        const page = await browser.newPage();
+                .pdf-header__meta {
+                  grid-area: meta;
+                  font-size: inherit;
+                  padding-left: 10px;
+                  margin-left: 10px;
+                  border-left: 2px solid #4c8cca;
+                }
+                .pdf-header__title {
+                  font-size: 1.5em;
+                  font-weight: 700;
+                }
+                .pdf-header__subtitle {
+                }
+                .pdf-header__description {
+                }
 
-        // Set duration until Timeout
-        await page.setDefaultNavigationTimeout(60 * 1000);
-
-        // Use HTTP auth if needed (for testing staging envs)
-        if (fnAuthUser && fnAuthPass) {
-          await page.authenticate({ username: fnAuthUser, password: fnAuthPass });
-        }
-
-        // We need to load the HTML differently depending on whether it's HTML
-        // in the POST or a URL in the querystring.
-        if (fnUrl) {
-          await page.goto(fnUrl);
-        } else {
-          await page.setContent(fnHtml);
-        }
-
-        // Set viewport dimensions
-        await page.setViewport({ width: fnWidth, height: fnHeight, deviceScaleFactor: fnScale });
-
-        // Set CSS Media
-        await page.emulateMedia(fnMedia);
-
-        // Output PNG or PDF?
-        if (fnOutput === 'png') {
-          // Output whole document or DOM fragment?
-          if (fnSelector) {
-            pngOptions.omitBackground = true;
-            const fragment = await page.$(fnSelector);
-            await fragment.screenshot(pngOptions);
-          } else {
-            await page.screenshot(pngOptions);
+                .pdf-header__logo-wrapper {
+                  grid-area: logo;
+                }
+                .pdf-header__logo {
+                  width: ${imgSize(pdfLogoFile).width}px;
+                  height: ${imgSize(pdfLogoFile).height}px;
+                }
+              </style>`;
           }
-        } else {
-          await page.pdf(pdfOptions);
+        } catch (err) {
+          log.error('createSnap', err);
+          return cb(err);
         }
 
-        // Close tab
-        await browser.close();
+        try {
+          // Process HTML file with puppeteer
+          const browser = await puppeteer.launch({
+            executablePath: '/usr/bin/google-chrome',
+            args: [
+              '--headless',
+              '--disable-gpu',
+              '--remote-debugging-port=9222',
+              '--remote-debugging-address=0.0.0.0',
+              '--no-sandbox',
+              '--disable-dev-shm-usage',
+            ],
+            dumpio: false, // set to `true` for debugging
+          });
+
+          // New Puppeteer tab
+          const page = await browser.newPage();
+
+          // Set duration until Timeout
+          await page.setDefaultNavigationTimeout(60 * 1000);
+
+          // Use HTTP auth if needed (for testing staging envs)
+          if (fnAuthUser && fnAuthPass) {
+            await page.authenticate({ username: fnAuthUser, password: fnAuthPass });
+          }
+
+          // Set viewport dimensions
+          await page.setViewport({ width: fnWidth, height: fnHeight, deviceScaleFactor: fnScale });
+
+          // Set CSS Media
+          await page.emulateMedia(fnMedia);
+
+          // We need to load the HTML differently depending on whether it's HTML
+          // in the POST or a URL in the querystring.
+          if (fnUrl) {
+            await page.goto(fnUrl, {
+              'waitUntil': 'load',
+            });
+          } else {
+            await page.setContent(fnHtml);
+          }
+
+          // Output PNG or PDF?
+          if (fnOutput === 'png') {
+            // Output whole document or DOM fragment?
+            if (fnSelector) {
+              pngOptions.omitBackground = true;
+              const fragment = await page.$(fnSelector);
+              await fragment.screenshot(pngOptions);
+            } else {
+              await page.screenshot(pngOptions);
+            }
+          } else {
+            await page.pdf(pdfOptions);
+          }
+
+          // Close tab
+          await browser.close();
+        }
+        catch (err) {
+          throw new Error('🔥 ' + err);
+        }
       }
 
       /**

@@ -77,9 +77,10 @@ app.post('/snap', [
   query('user', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('pass', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('logo', `Must be one of the following values: ${Object.keys(logos).join(', ')}. If you would like to use your site's logo with Snap Service, please read how to add it at https://github.com/UN-OCHA/tools-snap-service#custom-logos`).optional().isIn(Object.keys(logos)),
-  query('headerTitle', 'Must be an alphanumeric string').optional().isAscii(),
-  query('headerSubtitle', 'Must be an alphanumeric string').optional().isAscii(),
-  query('headerDescription', 'Must be an alphanumeric string').optional().isAscii(),
+  query('headerTitle', 'Must be an ASCII string').optional().isAscii(),
+  query('headerSubtitle', 'Must be an ASCII string').optional().isAscii(),
+  query('headerDescription', 'Must be an ASCII string').optional().isAscii(),
+  query('footerText', 'Must be an ASCII string').optional().isAscii(),
 ], (req, res) => {
   // debug
   console.log('🔗', require('url').parse(req.url).query);
@@ -111,6 +112,7 @@ app.post('/snap', [
   const fnHeaderTitle = req.query.headerTitle || '';
   const fnHeaderSubtitle = req.query.headerSubtitle || '';
   const fnHeaderDescription = req.query.headerDescription || '';
+  const fnFooterText = req.query.footerText || '';
 
   let fnHtml = '';
   let pngOptions = {};
@@ -178,8 +180,8 @@ app.post('/snap', [
                   Page <span class="pageNumber"></span> of <span class="totalPages"></span>
                 </div>
                 <div class="pdf-footer__right">
+                  <span class="pdf-footer__text">${fnFooterText}</span><br>
                   Date of Creation: <span>${moment().format('D MMM YYYY')}</span><br>
-                  <span class="url"></span><br>
                 </div>
               </footer>
               <style type="text/css">

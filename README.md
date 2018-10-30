@@ -34,6 +34,7 @@ Shared service to generate PNG/PDF snapshots of our websites.
 - `headerTitle` — (optional) Specify a Header Title for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
 - `headerSubtitle` — (optional) Specify a Header Subtitle for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
 - `headerDescription` — (optional) Specify a Header Description for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
+- `footerText` — (optional) Specify custom Footer text for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
 
 We do our best to validate your input. When found to be invalid, we return **HTTP 422 Unprocessable Entity** and the response body will be a JSON object containing all failed validations.
 

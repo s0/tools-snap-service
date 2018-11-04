@@ -369,6 +369,9 @@ app.post('/snap', [
           res.sendFile(tmpPath, () => {
             const duration = ((Date.now() - startTime) / 1000);
             res.end();
+            if (fnUrl) {
+              fnHtml = fnUrl
+            }
             log.info({ duration, inputSize: sizeHtml }, `PNG ${tmpPath} successfully generated for ${fnHtml} in ${duration} seconds.`);
             return fs.unlink(tmpPath, cb);
           });
@@ -377,6 +380,9 @@ app.post('/snap', [
           res.sendFile(tmpPath, () => {
             const duration = ((Date.now() - startTime) / 1000);
             res.end();
+            if (fnUrl) {
+              fnHtml = fnUrl
+            }
             log.info({ duration, inputSize: sizeHtml }, `PDF ${tmpPath} successfully generated for ${fnHtml} in ${duration} seconds.`);
             return fs.unlink(tmpPath, cb);
           });
@@ -398,6 +404,9 @@ app.post('/snap', [
     const duration = ((Date.now() - startTime) / 1000);
 
     if (err) {
+      if (fnUrl) {
+        fnHtml = fnUrl
+      }
       log.warn({ duration, inputSize: sizeHtml }, `Hardcopy generation failed for HTML ${fnHtml} in ${duration} seconds. ${err}`);
       res.status(500).send('' + err);
     }

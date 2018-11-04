@@ -3,6 +3,8 @@ FROM unocha/nodejs-builder:8.11.3 AS builder
 WORKDIR /srv/src
 COPY . .
 
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+
 RUN cd app && \
     npm install
 

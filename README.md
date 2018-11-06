@@ -1,5 +1,9 @@
 # Snap Service
 
+> 🤔 How does a computer get drunk?
+>
+> 🤣 It takes screenshots!
+
 Shared service to generate PNG/PDF snapshots of our websites.
 
 ## API

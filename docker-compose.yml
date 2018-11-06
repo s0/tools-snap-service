@@ -2,7 +2,8 @@ version: "2.1"
 
 services:
   snap:
-    image: unocha/debian-snapper-nodejs:8.11.4
+    build:
+      context: .
     hostname: ${PREFIX}-${STAGE}-print
     volumes:
       - "${BASEDIR}/app:/srv/www"

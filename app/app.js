@@ -360,9 +360,8 @@ app.post('/snap', [
           // Note: page.evaluate() is a stringified injection into the runtime.
           //       any arguments you need inside this function block have to be
           //       explicitly passed instead of relying on closure.
-          await page.evaluate((snapType) => {
-            let dom = document.querySelector('html');
-            dom.classList.add(`snap--${snapType}`);
+          await page.evaluate((snapOutput) => {
+            document.documentElement.classList.add(`snap--${snapOutput}`);
           }, fnOutput);
 
           // Output PNG or PDF?

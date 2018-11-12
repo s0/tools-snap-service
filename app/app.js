@@ -19,6 +19,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const methodOverride = require('method-override');
 const { query, validationResult } = require('express-validator/check');
+const url = require('url');
 
 const puppeteer = require('puppeteer');
 const moment = require('moment');
@@ -83,7 +84,7 @@ app.post('/snap', [
   query('footerText', 'Must be an ASCII string').optional().isAscii(),
 ], (req, res) => {
   // debug
-  console.log('🔗', require('url').parse(req.url).query);
+  log.info(url.parse(req.url).query);
 
   // Check for validation errors and return immediately if request was invalid.
   const errors = validationResult(req);
@@ -414,5 +415,5 @@ app.post('/snap', [
 });
 
 http.createServer(app).listen(app.get('port'), () => {
-  console.info('⚡️ Express server listening on port:', app.get('port'));
+  log.info('⚡️ Express server listening on port:', app.get('port'));
 });

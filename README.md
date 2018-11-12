@@ -84,6 +84,17 @@ It's possible to include your site's logo in the header of a PDF. First, make a 
 
 Once your PR has been deployed, you can activate your logo on PDF Snaps using the `logo` parameter (see [API](#api)) and the value you entered into `logos/_list.json`.
 
+### Custom Fonts
+
+It's possible to use a limited set of pre-approved custom fonts in your PDF header and footer. Similar to logos, if you'd like to use an a font not listed below, you can submit a PR to this repository in order to check the fonts into version control and expose the font to our server's Chrome instance.
+
+⚠️ **NOTE: the font MUST be open source.** The Snap Service is an open source repository and if your font's license is not open-source compatible then it cannot be included.
+
+Currently available fonts:
+
+- Roboto (v18)
+- Roboto Condensed (v16)
+
 ## Install / Develop
 
 The node container will do all the npm installation for you. No need to do it locally. Just run the Docker commands to get started.

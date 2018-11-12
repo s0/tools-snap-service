@@ -43,7 +43,40 @@ const allowedSelectorChars = ' #.[]()-_=+:~^*abcdefghijklmnopqrstuvwxyzABCDEFGHI
 // PDF paper sizes
 const allowedFormats = ['Letter', 'Legal', 'Tabloid', 'Ledger', 'A0', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6'];
 
-// Set up the application
+// Launch Puppeteer.
+//
+// Using the launch() command multiple times results in multiple Chromium procs
+// but (just like a normal web browser) we only want one. We'll open a new "tab"
+// each time our `/snap` route is invoked by reusing the established connection.
+let browserWSEndpoint = '';
+let browser;
+
+async function connectPuppeteer() {
+  if (browserWSEndpoint) {
+    browser = await puppeteer.connect({browserWSEndpoint});
+  }
+  else {
+    // Initialize Puppeteer
+    browser = await puppeteer.launch({
+      executablePath: '/usr/bin/google-chrome',
+      args: [
+        '--headless',
+        '--disable-gpu',
+        '--remote-debugging-port=9222',
+        '--remote-debugging-address=0.0.0.0',
+        '--no-sandbox',
+        '--disable-dev-shm-usage',
+      ],
+      dumpio: false, // set to `true` for debugging
+    });
+
+    browserWSEndpoint = browser.wsEndpoint();
+  }
+
+  return browser;
+}
+
+// Set up the Express app
 const app = express();
 
 app.set('env', process.env.NODE_ENV || 'dockerdev');
@@ -284,22 +317,17 @@ app.post('/snap', [
         }
 
         try {
-          // Process HTML file with puppeteer
-          const browser = await puppeteer.launch({
-            executablePath: '/usr/bin/google-chrome',
-            args: [
-              '--headless',
-              '--disable-gpu',
-              '--remote-debugging-port=9222',
-              '--remote-debugging-address=0.0.0.0',
-              '--no-sandbox',
-              '--disable-dev-shm-usage',
-            ],
-            dumpio: false, // set to `true` for debugging
-          });
+          // Access the Chromium instance by either launching or connecting to
+          // Puppeteer.
+          browser = await connectPuppeteer();
+
+          // Instead of initializing Puppeteer here, we set up a browser context
+          // (think of it as a new tab in the browser). This context arg should
+          // be unique. Timestamp + querystring is random enough for our case.
+          const browserContext = `${startTime}${url.parse(req.url).query}`;
 
           // New Puppeteer tab
-          const page = await browser.newPage();
+          const page = await browser.newPage({ context: browserContext });
 
           // Set duration until Timeout
           await page.setDefaultNavigationTimeout(60 * 1000);
@@ -351,8 +379,8 @@ app.post('/snap', [
             await page.pdf(pdfOptions);
           }
 
-          // Close tab
-          await browser.close();
+          // Disconnect from Puppeteer process
+          await browser.disconnect();
         }
         catch (err) {
           throw new Error('🔥 ' + err);

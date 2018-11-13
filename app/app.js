@@ -49,9 +49,10 @@ const allowedFormats = ['Letter', 'Legal', 'Tabloid', 'Ledger', 'A0', 'A1', 'A2'
 // but (just like a normal web browser) we only want one. We'll open a new "tab"
 // each time our `/snap` route is invoked by reusing the established connection.
 let browserWSEndpoint = '';
-let browser;
 
 async function connectPuppeteer() {
+  let browser;
+
   if (browserWSEndpoint) {
     browser = await puppeteer.connect({browserWSEndpoint});
   }
@@ -319,7 +320,7 @@ app.post('/snap', [
         try {
           // Access the Chromium instance by either launching or connecting to
           // Puppeteer.
-          browser = await connectPuppeteer();
+          const browser = await connectPuppeteer();
 
           // Instead of initializing Puppeteer here, we set up a browser context
           // (think of it as a new tab in the browser). This context arg should

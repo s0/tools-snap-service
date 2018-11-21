@@ -346,12 +346,23 @@ app.post('/snap', [
 
           // We need to load the HTML differently depending on whether it's HTML
           // in the POST or a URL in the querystring.
+          let gotoResult;
           if (fnUrl) {
-            await page.goto(fnUrl, {
+            gotoResult = await page.goto(fnUrl, {
               'waitUntil': 'load',
             });
           } else {
             await page.setContent(fnHtml);
+          }
+
+          // We don't consider anything except 200 a success. For instance if
+          // HTTP Auth is needed, but credentials weren't supplied, we should
+          // return an error.
+          if (gotoResult._status !== 200) {
+            return cb({
+              externalStatus: gotoResult._status,
+              message: `Problem accessing Target URL. HTTP status code: ${gotoResult._status}`,
+            });
           }
 
           // Add a conditional class indicating what type of Snap is happening.
@@ -424,7 +435,6 @@ app.post('/snap', [
 
         // return cb(null, 'everything is fine');
       }).catch((err) => {
-        log.error('createSnap', err);
         return cb(err);
       });
     },
@@ -436,8 +446,8 @@ app.post('/snap', [
       if (fnUrl) {
         fnHtml = fnUrl
       }
-      log.warn({ duration, inputSize: sizeHtml }, `Hardcopy generation failed for HTML ${fnHtml} in ${duration} seconds. ${err}`);
-      res.status(500).send('' + err);
+      log.error({ duration, inputSize: sizeHtml }, `Hardcopy generation failed for HTML ${fnHtml} in ${duration} seconds. ${err}`);
+      res.status(err.externalStatus || 500).send(err.message);
     }
   });
 });

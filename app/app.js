@@ -394,7 +394,7 @@ app.post('/snap', [
           await browser.disconnect();
         }
         catch (err) {
-          throw new Error('🔥 ' + err);
+          throw new Error(err);
         }
       }
 
@@ -453,5 +453,5 @@ app.post('/snap', [
 });
 
 http.createServer(app).listen(app.get('port'), () => {
-  log.info('⚡️ Express server listening on port:', app.get('port'));
+  log.info('Express server listening on port:', app.get('port'));
 });

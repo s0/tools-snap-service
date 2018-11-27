@@ -19,6 +19,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const methodOverride = require('method-override');
 const { query, validationResult } = require('express-validator/check');
+const url = require('url');
 
 const puppeteer = require('puppeteer');
 const moment = require('moment');
@@ -42,7 +43,41 @@ const allowedSelectorChars = ' #.[]()-_=+:~^*abcdefghijklmnopqrstuvwxyzABCDEFGHI
 // PDF paper sizes
 const allowedFormats = ['Letter', 'Legal', 'Tabloid', 'Ledger', 'A0', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6'];
 
-// Set up the application
+// Launch Puppeteer.
+//
+// Using the launch() command multiple times results in multiple Chromium procs
+// but (just like a normal web browser) we only want one. We'll open a new "tab"
+// each time our `/snap` route is invoked by reusing the established connection.
+let browserWSEndpoint = '';
+
+async function connectPuppeteer() {
+  let browser;
+
+  if (browserWSEndpoint) {
+    browser = await puppeteer.connect({browserWSEndpoint});
+  }
+  else {
+    // Initialize Puppeteer
+    browser = await puppeteer.launch({
+      executablePath: '/usr/bin/google-chrome',
+      args: [
+        '--headless',
+        '--disable-gpu',
+        '--remote-debugging-port=9222',
+        '--remote-debugging-address=0.0.0.0',
+        '--no-sandbox',
+        '--disable-dev-shm-usage',
+      ],
+      dumpio: false, // set to `true` for debugging
+    });
+
+    browserWSEndpoint = browser.wsEndpoint();
+  }
+
+  return browser;
+}
+
+// Set up the Express app
 const app = express();
 
 app.set('env', process.env.NODE_ENV || 'dockerdev');
@@ -77,12 +112,13 @@ app.post('/snap', [
   query('user', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('pass', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('logo', `Must be one of the following values: ${Object.keys(logos).join(', ')}. If you would like to use your site's logo with Snap Service, please read how to add it at https://github.com/UN-OCHA/tools-snap-service#custom-logos`).optional().isIn(Object.keys(logos)),
-  query('headerTitle', 'Must be an alphanumeric string').optional().isAscii(),
-  query('headerSubtitle', 'Must be an alphanumeric string').optional().isAscii(),
-  query('headerDescription', 'Must be an alphanumeric string').optional().isAscii(),
+  query('headerTitle', 'Must be an ASCII string').optional().isAscii(),
+  query('headerSubtitle', 'Must be an ASCII string').optional().isAscii(),
+  query('headerDescription', 'Must be an ASCII string').optional().isAscii(),
+  query('footerText', 'Must be an ASCII string').optional().isAscii(),
 ], (req, res) => {
   // debug
-  console.log('🔗', require('url').parse(req.url).query);
+  log.info(url.parse(req.url).query);
 
   // Check for validation errors and return immediately if request was invalid.
   const errors = validationResult(req);
@@ -111,6 +147,7 @@ app.post('/snap', [
   const fnHeaderTitle = req.query.headerTitle || '';
   const fnHeaderSubtitle = req.query.headerSubtitle || '';
   const fnHeaderDescription = req.query.headerDescription || '';
+  const fnFooterText = req.query.footerText || '';
 
   let fnHtml = '';
   let pngOptions = {};
@@ -178,8 +215,8 @@ app.post('/snap', [
                   Page <span class="pageNumber"></span> of <span class="totalPages"></span>
                 </div>
                 <div class="pdf-footer__right">
+                  <span class="pdf-footer__text">${fnFooterText}</span><br>
                   Date of Creation: <span>${moment().format('D MMM YYYY')}</span><br>
-                  <span class="url"></span><br>
                 </div>
               </footer>
               <style type="text/css">
@@ -281,22 +318,17 @@ app.post('/snap', [
         }
 
         try {
-          // Process HTML file with puppeteer
-          const browser = await puppeteer.launch({
-            executablePath: '/usr/bin/google-chrome',
-            args: [
-              '--headless',
-              '--disable-gpu',
-              '--remote-debugging-port=9222',
-              '--remote-debugging-address=0.0.0.0',
-              '--no-sandbox',
-              '--disable-dev-shm-usage',
-            ],
-            dumpio: false, // set to `true` for debugging
-          });
+          // Access the Chromium instance by either launching or connecting to
+          // Puppeteer.
+          const browser = await connectPuppeteer();
+
+          // Instead of initializing Puppeteer here, we set up a browser context
+          // (think of it as a new tab in the browser). This context arg should
+          // be unique. Timestamp + querystring is random enough for our case.
+          const browserContext = `${startTime}${url.parse(req.url).query}`;
 
           // New Puppeteer tab
-          const page = await browser.newPage();
+          const page = await browser.newPage({ context: browserContext });
 
           // Set duration until Timeout
           await page.setDefaultNavigationTimeout(60 * 1000);
@@ -329,9 +361,8 @@ app.post('/snap', [
           // Note: page.evaluate() is a stringified injection into the runtime.
           //       any arguments you need inside this function block have to be
           //       explicitly passed instead of relying on closure.
-          await page.evaluate((snapType) => {
-            let dom = document.querySelector('html');
-            dom.classList.add(`snap--${snapType}`);
+          await page.evaluate((snapOutput) => {
+            document.documentElement.classList.add(`snap--${snapOutput}`);
           }, fnOutput);
 
           // Output PNG or PDF?
@@ -348,8 +379,8 @@ app.post('/snap', [
             await page.pdf(pdfOptions);
           }
 
-          // Close tab
-          await browser.close();
+          // Disconnect from Puppeteer process
+          await browser.disconnect();
         }
         catch (err) {
           throw new Error('🔥 ' + err);
@@ -367,6 +398,9 @@ app.post('/snap', [
           res.sendFile(tmpPath, () => {
             const duration = ((Date.now() - startTime) / 1000);
             res.end();
+            if (fnUrl) {
+              fnHtml = fnUrl
+            }
             log.info({ duration, inputSize: sizeHtml }, `PNG ${tmpPath} successfully generated for ${fnHtml} in ${duration} seconds.`);
             return fs.unlink(tmpPath, cb);
           });
@@ -375,6 +409,9 @@ app.post('/snap', [
           res.sendFile(tmpPath, () => {
             const duration = ((Date.now() - startTime) / 1000);
             res.end();
+            if (fnUrl) {
+              fnHtml = fnUrl
+            }
             log.info({ duration, inputSize: sizeHtml }, `PDF ${tmpPath} successfully generated for ${fnHtml} in ${duration} seconds.`);
             return fs.unlink(tmpPath, cb);
           });
@@ -396,6 +433,9 @@ app.post('/snap', [
     const duration = ((Date.now() - startTime) / 1000);
 
     if (err) {
+      if (fnUrl) {
+        fnHtml = fnUrl
+      }
       log.warn({ duration, inputSize: sizeHtml }, `Hardcopy generation failed for HTML ${fnHtml} in ${duration} seconds. ${err}`);
       res.status(500).send('' + err);
     }
@@ -403,5 +443,5 @@ app.post('/snap', [
 });
 
 http.createServer(app).listen(app.get('port'), () => {
-  console.info('⚡️ Express server listening on port:', app.get('port'));
+  log.info('⚡️ Express server listening on port:', app.get('port'));
 });

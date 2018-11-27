@@ -1,5 +1,9 @@
 # Snap Service
 
+> 🤔 How does a computer get drunk?
+>
+> 🤣 It takes screenshots!
+
 Shared service to generate PNG/PDF snapshots of our websites.
 
 ## API
@@ -34,6 +38,7 @@ Shared service to generate PNG/PDF snapshots of our websites.
 - `headerTitle` — (optional) Specify a Header Title for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
 - `headerSubtitle` — (optional) Specify a Header Subtitle for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
 - `headerDescription` — (optional) Specify a Header Description for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
+- `footerText` — (optional) Specify custom Footer text for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
 
 We do our best to validate your input. When found to be invalid, we return **HTTP 422 Unprocessable Entity** and the response body will be a JSON object containing all failed validations.
 
@@ -78,6 +83,17 @@ It's possible to include your site's logo in the header of a PDF. First, make a 
 ⚠️ **NOTE: do not upload anything except SVG.** At the present time this is the only filetype we accept.
 
 Once your PR has been deployed, you can activate your logo on PDF Snaps using the `logo` parameter (see [API](#api)) and the value you entered into `logos/_list.json`.
+
+### Custom Fonts
+
+It's possible to use a limited set of pre-approved custom fonts in your PDF header and footer. Similar to logos, if you'd like to use an a font not listed below, you can submit a PR to this repository in order to check the fonts into version control and expose the font to our server's Chrome instance.
+
+⚠️ **NOTE: the font MUST be open source.** The Snap Service is an open source repository and if your font's license is not open-source compatible then it cannot be included.
+
+Currently available fonts:
+
+- Roboto (v18)
+- Roboto Condensed (v16)
 
 ## Install / Develop
 

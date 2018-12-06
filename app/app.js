@@ -224,6 +224,7 @@ app.post('/snap', [
                 *:before,
                 *:after {
                   box-sizing: border-box;
+                  -webkit-print-color-adjust: exact;
                 }
 
                 .pdf-footer {
@@ -235,6 +236,7 @@ app.post('/snap', [
                   font-family: "Roboto Condensed", Roboto, serif;
                   font-weight: 400;
                   font-size: 12px;
+                  color: #4c8cca;
                 }
                 .pdf-footer__left {
                   position: relative;
@@ -269,11 +271,12 @@ app.post('/snap', [
                 *:before,
                 *:after {
                   box-sizing: border-box;
+                  -webkit-print-color-adjust: exact;
                 }
 
                 .pdf-header {
                   width: 100%;
-                  margin: 0 7.5mm 7.5mm;
+                  margin: 2.5mm 7.5mm 7.5mm;
                   padding-bottom: 10px;
                   border-bottom: 2px solid #4c8cca;
 
@@ -284,7 +287,7 @@ app.post('/snap', [
 
                   display: grid;
                   grid-template-areas: "logo meta";
-                  grid-template-columns: ${imgSize(pdfLogoFile).width}px 2fr;
+                  grid-template-columns: ${imgSize(pdfLogoFile).width*.75}px 2fr;
                 }
 
                 .pdf-header__meta {
@@ -292,23 +295,29 @@ app.post('/snap', [
                   font-size: inherit;
                   padding-left: 10px;
                   margin-left: 10px;
-                  border-left: 2px solid #4c8cca;
+                  border-left: 1px solid #4c8cca;
+                  color: #4c8cca;
                 }
                 .pdf-header__title {
-                  font-size: 1.5em;
+                  line-height: .9;
+                  font-size: 22px;
                   font-weight: 700;
                 }
                 .pdf-header__subtitle {
+                  font-size: 15px;
                 }
                 .pdf-header__description {
+                  font-style: italic;
                 }
 
                 .pdf-header__logo-wrapper {
                   grid-area: logo;
                 }
                 .pdf-header__logo {
-                  width: ${imgSize(pdfLogoFile).width}px;
-                  height: ${imgSize(pdfLogoFile).height}px;
+                  width: ${imgSize(pdfLogoFile).width*.75}px;
+                  height: ${imgSize(pdfLogoFile).height*.75}px;
+                  position: relative;
+                  top: 2px;
                 }
               </style>`;
           }
@@ -322,13 +331,9 @@ app.post('/snap', [
           // Puppeteer.
           const browser = await connectPuppeteer();
 
-          // Instead of initializing Puppeteer here, we set up a browser context
-          // (think of it as a new tab in the browser). This context arg should
-          // be unique. Timestamp + querystring is random enough for our case.
-          const browserContext = `${startTime}${url.parse(req.url).query}`;
-
-          // New Puppeteer tab
-          const page = await browser.newPage({ context: browserContext });
+          // New Puppeteer Incognito context and create a new page within.
+          const context = await browser.createIncognitoBrowserContext();
+          const page = await context.newPage();
 
           // Set duration until Timeout
           await page.setDefaultNavigationTimeout(60 * 1000);
@@ -380,6 +385,7 @@ app.post('/snap', [
           }
 
           // Disconnect from Puppeteer process
+          await context.close();
           await browser.disconnect();
         }
         catch (err) {

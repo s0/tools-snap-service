@@ -4,6 +4,7 @@ WORKDIR /srv/src
 COPY . .
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+env NODE_ENV=production
 
 RUN cd app && \
     npm install

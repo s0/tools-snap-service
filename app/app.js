@@ -331,13 +331,9 @@ app.post('/snap', [
           // Puppeteer.
           const browser = await connectPuppeteer();
 
-          // Instead of initializing Puppeteer here, we set up a browser context
-          // (think of it as a new tab in the browser). This context arg should
-          // be unique. Timestamp + querystring is random enough for our case.
-          const browserContext = `${startTime}${url.parse(req.url).query}`;
-
-          // New Puppeteer tab
-          const page = await browser.newPage({ context: browserContext });
+          // New Puppeteer Incognito context and create a new page within.
+          const context = await browser.createIncognitoBrowserContext();
+          const page = await context.newPage();
 
           // Set duration until Timeout
           await page.setDefaultNavigationTimeout(60 * 1000);
@@ -389,6 +385,7 @@ app.post('/snap', [
           }
 
           // Disconnect from Puppeteer process
+          await context.close();
           await browser.disconnect();
         }
         catch (err) {

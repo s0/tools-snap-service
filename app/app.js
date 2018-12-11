@@ -19,6 +19,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const methodOverride = require('method-override');
 const { query, validationResult } = require('express-validator/check');
+const { sanitize } = require('express-validator/filter');
 const url = require('url');
 
 const puppeteer = require('puppeteer');
@@ -112,10 +113,10 @@ app.post('/snap', [
   query('user', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('pass', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('logo', `Must be one of the following values: ${Object.keys(logos).join(', ')}. If you would like to use your site's logo with Snap Service, please read how to add it at https://github.com/UN-OCHA/tools-snap-service#custom-logos`).optional().isIn(Object.keys(logos)),
-  query('headerTitle', 'Must be an ASCII string').optional().isAscii(),
-  query('headerSubtitle', 'Must be an ASCII string').optional().isAscii(),
-  query('headerDescription', 'Must be an ASCII string').optional().isAscii(),
-  query('footerText', 'Must be an ASCII string').optional().isAscii(),
+  sanitize('headerTitle').escape(),
+  sanitize('headerSubtitle').escape(),
+  sanitize('headerDescription').escape(),
+  sanitize('footerText').escape(),
 ], (req, res) => {
   // debug
   log.info(url.parse(req.url).query);

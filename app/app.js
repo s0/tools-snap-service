@@ -142,6 +142,7 @@ app.post('/snap', [
   const fnFormat = req.query.format || 'A4';
   const fnAuthUser = req.query.user || '';
   const fnAuthPass = req.query.pass || '';
+  const fnCookies = req.query.cookies || '';
   const fnSelector = req.query.selector || '';
   const fnFullPage = (fnSelector) ? false : true;
   const fnLogo = req.query.logo || false;
@@ -349,6 +350,27 @@ app.post('/snap', [
 
           // Set CSS Media
           await page.emulateMedia(fnMedia);
+
+          // Compile cookies. We have to manually specify some extra info such
+          // as host/path in order to create a valid cookie.
+          let cookies = [];
+          fnCookies.split('; ').map((cookie) => {
+            let thisCookie = {};
+            const [name, value] = cookie.split('=');
+
+            thisCookie.url = fnUrl;
+            thisCookie.name = name;
+            thisCookie.value = value;
+
+            cookies.push(thisCookie);
+          });
+
+          // Set cookies.
+          cookies.forEach(async function(cookie) {
+            await page.setCookie(cookie).catch((err) => {
+              log.error(err);
+            });
+          })
 
           // We need to load the HTML differently depending on whether it's HTML
           // in the POST or a URL in the querystring.

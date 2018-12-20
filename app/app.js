@@ -127,7 +127,7 @@ app.post('/snap', [
   sanitize('footerText').escape(),
 ], (req, res) => {
   // debug
-  log.info(url.parse(req.url).query, 'Request received');
+  log.info({ 'query': url.parse(req.url).query }, 'Request received');
 
   // Check for validation errors and return immediately if request was invalid.
   const errors = validationResult(req);

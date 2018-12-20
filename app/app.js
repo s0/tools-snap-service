@@ -121,13 +121,14 @@ app.post('/snap', [
   query('user', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('pass', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('logo', `Must be one of the following values: ${Object.keys(logos).join(', ')}. If you would like to use your site's logo with Snap Service, please read how to add it at https://github.com/UN-OCHA/tools-snap-service#custom-logos`).optional().isIn(Object.keys(logos)),
+  query('service', 'Must be an alphanumeric string identifier for the requesting service.').optional().isAlphanumeric(),
   sanitize('headerTitle').escape(),
   sanitize('headerSubtitle').escape(),
   sanitize('headerDescription').escape(),
   sanitize('footerText').escape(),
 ], (req, res) => {
   // debug
-  log.info({ 'query': url.parse(req.url).query }, 'Request received');
+  log.debug({ 'query': url.parse(req.url).query }, 'Request received');
 
   // Check for validation errors and return immediately if request was invalid.
   const errors = validationResult(req);
@@ -158,6 +159,7 @@ app.post('/snap', [
   const fnHeaderSubtitle = req.query.headerSubtitle || '';
   const fnHeaderDescription = req.query.headerDescription || '';
   const fnFooterText = req.query.footerText || '';
+  const fnService = req.query.service;
 
   // Make a nice blob for the logs. ELK will sort this out.
   // Blame Emma.
@@ -167,7 +169,7 @@ app.post('/snap', [
                    'authuser': fnAuthUser, 'authpass': (fnAuthPass ? '*****' : ''), 'cookies': fnCookies,
                    'selector': fnSelector, 'fullpage': fnFullPage, 'logo': fnLogo,
                    'title': fnHeaderTitle, 'subtitle': fnHeaderSubtitle, 'description': fnHeaderDescription, 'footer': fnFooterText,
-                   'ip': ip }
+                   'service': fnService, 'ip': ip }
 
   let fnHtml = '';
   let pngOptions = {};

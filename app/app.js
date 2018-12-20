@@ -224,7 +224,7 @@ app.post('/snap', [
                 </div>
                 <div class="pdf-footer__right">
                   <span class="pdf-footer__text">${fnFooterText}</span><br>
-                  ${t['Date of Creation']}: <span>${moment().locale(fnLocale).format('ll')}</span><br>
+                  ${t['Date of Creation']}: <span>${moment().locale(fnLocale).format('D MMM YYYY')}</span><br>
                 </div>
               </footer>
               <style type="text/css">

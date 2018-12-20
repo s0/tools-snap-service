@@ -36,6 +36,9 @@ require('./config');
 // the possible values and give a more informative validation error.
 const logos = require('./logos/_list.json');
 
+// Our list of officially supported translations.
+const locales = require('./locales/_list.json');
+
 // It's impossible to regex a CSS selector so we'll assemble a list of the most
 // common characters. Feel free to add to this list if it's preventing a legitimate
 // selector from being used. The space at the beginning of this string is intentional.
@@ -122,6 +125,7 @@ app.post('/snap', [
   query('pass', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('logo', `Must be one of the following values: ${Object.keys(logos).join(', ')}. If you would like to use your site's logo with Snap Service, please read how to add it at https://github.com/UN-OCHA/tools-snap-service#custom-logos`).optional().isIn(Object.keys(logos)),
   query('service', 'Must be an alphanumeric string identifier for the requesting service.').optional().isAlphanumeric(),
+  query('locale', `Must be one of the following language codes: ${Object.keys(locales).join(', ')}`).optional().isIn(Object.keys(locales)),
   sanitize('headerTitle').escape(),
   sanitize('headerSubtitle').escape(),
   sanitize('headerDescription').escape(),
@@ -170,6 +174,9 @@ app.post('/snap', [
                    'selector': fnSelector, 'fullpage': fnFullPage, 'logo': fnLogo,
                    'title': fnHeaderTitle, 'subtitle': fnHeaderSubtitle, 'description': fnHeaderDescription, 'footer': fnFooterText,
                    'service': fnService, 'ip': ip }
+
+  const fnLocale = req.query.locale || 'en';
+  const t = require(`./locales/${fnLocale}.js`);
 
   let fnHtml = '';
   let pngOptions = {};
@@ -241,11 +248,11 @@ app.post('/snap', [
             footerTemplate: `
               <footer class="pdf-footer">
                 <div class="pdf-footer__left">
-                  Page <span class="pageNumber"></span> of <span class="totalPages"></span>
+                  ${t['Page']} <span class="pageNumber"></span> ${t['of']} <span class="totalPages"></span>
                 </div>
                 <div class="pdf-footer__right">
                   <span class="pdf-footer__text">${fnFooterText}</span><br>
-                  Date of Creation: <span>${moment().format('D MMM YYYY')}</span><br>
+                  ${t['Date of Creation']}: <span>${moment().locale(fnLocale).format('D MMM YYYY')}</span><br>
                 </div>
               </footer>
               <style type="text/css">

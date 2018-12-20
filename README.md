@@ -40,6 +40,7 @@ Shared service to generate PNG/PDF snapshots of our websites.
 - `headerSubtitle` — (optional) Specify a Header Subtitle for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
 - `headerDescription` — (optional) Specify a Header Description for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
 - `footerText` — (optional) Specify custom Footer text for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
+- `locale` — (optional) Localizes the dynamically generated PDF footer strings (pagination and creation date). See [Localization](#localization) for locale options and defaults.
 
 We do our best to validate your input. When found to be invalid, we return **HTTP 422 Unprocessable Entity** and the response body will be a JSON object containing all failed validations.
 
@@ -60,6 +61,13 @@ html[class^='snap'] .my-selector {
 ```
 
 This class can be used anywhere in your CSS, including within Media Queries (e.g. `@media print`, `@media screen and (min-width: 700px)`, etc).
+
+### Localization
+
+We currently support the following localizations for PDF footers:
+
+- `en` (default)
+- `fr`
 
 ### Custom Logos
 

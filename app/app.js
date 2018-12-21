@@ -36,6 +36,9 @@ require('./config');
 // the possible values and give a more informative validation error.
 const logos = require('./logos/_list.json');
 
+// Our list of officially supported translations.
+const locales = require('./locales/_list.json');
+
 // It's impossible to regex a CSS selector so we'll assemble a list of the most
 // common characters. Feel free to add to this list if it's preventing a legitimate
 // selector from being used. The space at the beginning of this string is intentional.
@@ -43,6 +46,14 @@ const allowedSelectorChars = ' #.[]()-_=+:~^*abcdefghijklmnopqrstuvwxyzABCDEFGHI
 
 // PDF paper sizes
 const allowedFormats = ['Letter', 'Legal', 'Tabloid', 'Ledger', 'A0', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6'];
+
+// Helper function.
+function ated(request) {
+  return request.headers['x-forwarded-for'] ||
+         request.connection.remoteAddress ||
+         request.socket.remoteAddress ||
+         (request.connection.socket ? request.connection.socket.remoteAddress : null);
+}
 
 // Launch Puppeteer.
 //
@@ -113,13 +124,15 @@ app.post('/snap', [
   query('user', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('pass', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('logo', `Must be one of the following values: ${Object.keys(logos).join(', ')}. If you would like to use your site's logo with Snap Service, please read how to add it at https://github.com/UN-OCHA/tools-snap-service#custom-logos`).optional().isIn(Object.keys(logos)),
+  query('service', 'Must be an alphanumeric string identifier for the requesting service.').optional().isAlphanumeric(),
+  query('locale', `Must be one of the following language codes: ${Object.keys(locales).join(', ')}`).optional().isIn(Object.keys(locales)),
   sanitize('headerTitle').escape(),
   sanitize('headerSubtitle').escape(),
   sanitize('headerDescription').escape(),
   sanitize('footerText').escape(),
 ], (req, res) => {
   // debug
-  log.info(url.parse(req.url).query);
+  log.debug({ 'query': url.parse(req.url).query }, 'Request received');
 
   // Check for validation errors and return immediately if request was invalid.
   const errors = validationResult(req);
@@ -150,6 +163,20 @@ app.post('/snap', [
   const fnHeaderSubtitle = req.query.headerSubtitle || '';
   const fnHeaderDescription = req.query.headerDescription || '';
   const fnFooterText = req.query.footerText || '';
+  const fnService = req.query.service;
+
+  // Make a nice blob for the logs. ELK will sort this out.
+  // Blame Emma.
+  const ip = ated(req);
+  let lgParams = { 'url': fnUrl, 'width': fnWidth, 'height': fnHeight, 'scale': fnScale,
+                   'media': fnMedia, 'output': fnOutput, 'format': fnFormat,
+                   'authuser': fnAuthUser, 'authpass': (fnAuthPass ? '*****' : ''), 'cookies': fnCookies,
+                   'selector': fnSelector, 'fullpage': fnFullPage, 'logo': fnLogo,
+                   'title': fnHeaderTitle, 'subtitle': fnHeaderSubtitle, 'description': fnHeaderDescription, 'footer': fnFooterText,
+                   'service': fnService, 'ip': ip }
+
+  const fnLocale = req.query.locale || 'en';
+  const t = require(`./locales/${fnLocale}.js`);
 
   let fnHtml = '';
   let pngOptions = {};
@@ -168,6 +195,9 @@ app.post('/snap', [
           sizeHtml = stats.size || 0;
           fnHtml = req.files.html.path;
           tmpPath = `${fnHtml}.${fnOutput}`;
+
+          lgParams.size = sizeHtml
+          lgParams.tmpfile = tmpPath
         });
       }
       else if (req.body && req.body.html && req.body.html.length) {
@@ -181,11 +211,15 @@ app.post('/snap', [
           }
 
           tmpPath = `${tmpPath}.${fnOutput}`;
+
+          lgParams.size = sizeHtml
+          lgParams.tmpfile = tmpPath
         });
       }
       else if (req.query.url) {
         const digest = crypto.createHash('md5').update(fnUrl).digest('hex');
         tmpPath = `/tmp/snap-${Date.now()}-${digest}.${fnOutput}`;
+        lgParams.tmpfile = tmpPath
       }
       else {
         const noCaseErrMsg = 'An HTML file was not uploaded or could not be accessed.';
@@ -214,11 +248,11 @@ app.post('/snap', [
             footerTemplate: `
               <footer class="pdf-footer">
                 <div class="pdf-footer__left">
-                  Page <span class="pageNumber"></span> of <span class="totalPages"></span>
+                  ${t['Page']} <span class="pageNumber"></span> ${t['of']} <span class="totalPages"></span>
                 </div>
                 <div class="pdf-footer__right">
                   <span class="pdf-footer__text">${fnFooterText}</span><br>
-                  Date of Creation: <span>${moment().format('D MMM YYYY')}</span><br>
+                  ${t['Date of Creation']}: <span>${moment().locale(fnLocale).format('D MMM YYYY')}</span><br>
                 </div>
               </footer>
               <style type="text/css">
@@ -427,10 +461,8 @@ app.post('/snap', [
           res.sendFile(tmpPath, () => {
             const duration = ((Date.now() - startTime) / 1000);
             res.end();
-            if (fnUrl) {
-              fnHtml = fnUrl
-            }
-            log.info({ duration, inputSize: sizeHtml }, `PNG ${tmpPath} successfully generated for ${fnHtml} in ${duration} seconds.`);
+            lgParams.duration = duration
+            log.info(lgParams, `PNG ${tmpPath} successfully generated for ${fnUrl}${fnHtml} in ${duration} seconds.`);
             return fs.unlink(tmpPath, cb);
           });
         } else {
@@ -438,10 +470,8 @@ app.post('/snap', [
           res.sendFile(tmpPath, () => {
             const duration = ((Date.now() - startTime) / 1000);
             res.end();
-            if (fnUrl) {
-              fnHtml = fnUrl
-            }
-            log.info({ duration, inputSize: sizeHtml }, `PDF ${tmpPath} successfully generated for ${fnHtml} in ${duration} seconds.`);
+            lgParams.duration = duration
+            log.info(lgParams, `PDF ${tmpPath} successfully generated for ${fnUrl}${fnHtml} in ${duration} seconds.`);
             return fs.unlink(tmpPath, cb);
           });
         }
@@ -462,10 +492,8 @@ app.post('/snap', [
     const duration = ((Date.now() - startTime) / 1000);
 
     if (err) {
-      if (fnUrl) {
-        fnHtml = fnUrl
-      }
-      log.warn({ duration, inputSize: sizeHtml }, `Hardcopy generation failed for HTML ${fnHtml} in ${duration} seconds. ${err}`);
+      lgParams.duration = duration
+      log.warn(lgParams, `Hardcopy generation failed for HTML ${fnUrl}${fnHtml} in ${duration} seconds. ${err}`);
       res.status(500).send('' + err);
     }
   });

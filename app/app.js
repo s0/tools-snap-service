@@ -461,7 +461,7 @@ app.post('/snap', [
           res.sendFile(tmpPath, () => {
             const duration = ((Date.now() - startTime) / 1000);
             res.end();
-            lgParms.duration = duration
+            lgParams.duration = duration
             log.info(lgParams, `PNG ${tmpPath} successfully generated for ${fnUrl}${fnHtml} in ${duration} seconds.`);
             return fs.unlink(tmpPath, cb);
           });

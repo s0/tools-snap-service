@@ -10,6 +10,7 @@ module.exports = {
   // Sharing
   'Date': 'Date',
   'Date of Creation': 'Date of creation',
+  'Downloaded': 'Downloaded',
   'Page': 'Page',
   'of': 'of',
 }

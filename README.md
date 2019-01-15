@@ -14,7 +14,7 @@ Shared service to generate PNG/PDF snapshots of our websites.
 **Parameters:**
 
 - `url` — (**required**) the URL you want to render.
-- `service` - (**recommended**) an alphanumeric identifier for the requesting service.
+- `service` — (**recommended**) an alphanumeric identifier for the requesting service. You can more easily generate usage reports by specifying the requesting service.
 - `output` — (default `pdf`) specify `png` if you want a PNG image or `pdf` for PDF.
 - `media` — (default `screen`) specify a CSS Media. Only other option is `print`.
 - `width` — (default `800`) specify a pixel value for the viewport width.

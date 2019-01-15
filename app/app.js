@@ -5,7 +5,8 @@
  * Accepts POST requests to /snap with either a HTTP file upload sent with
  * the name "html" or body form data with HTML content in a field named "html".
  *
- * The service will run hrome and return the generated PDF or PNG data.
+ * Alternatively, we accept a `url` parameter which will render an arbitrary
+ * web page on the internet.
  *
  * This service is not meant to be exposed to the public, and use of this
  * service should be mediated by another application with access controls.

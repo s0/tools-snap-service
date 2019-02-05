@@ -32,6 +32,7 @@ Shared service to generate PNG/PDF snapshots of our websites.
   - `A4`: 8.27in x 11.7in
   - `A5`: 5.83in x 8.27in
   - `A6`: 4.13in x 5.83in
+- `pdfLandscape` — (default `false`) a Boolean indicating whether the PDF should be Landscape. Defaults to Portrait.
 - `selector` — (optional) specify a CSS selector. Snap Service will return ONLY the first element which matches your selector.
 - `logo` — (optional) Display your site's logo in the header area of each page on your PDF. See [Custom Logos](#custom-logos) section for instructions on adding your logo to this repository.
 - `user` — (optional) HTTP Basic Authentication username.

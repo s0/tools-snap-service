@@ -122,6 +122,7 @@ app.post('/snap', [
   query('output', 'Must be one of the following: png, pdf').optional().isIn([ 'png', 'pdf' ]),
   query('selector', `Must be a CSS selector made of the following characters: ${allowedSelectorChars}`).optional().isWhitelisted(allowedSelectorChars),
   query('format', `Must be one of the following values: ${allowedFormats.join(', ')}`).optional().isIn(allowedFormats),
+  query('pdfLandscape', 'Must be one of the following: true, false').optional().isBoolean(),
   query('user', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('pass', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('logo', `Must be one of the following values: ${Object.keys(logos).join(', ')}. If you would like to use your site's logo with Snap Service, please read how to add it at https://github.com/UN-OCHA/tools-snap-service#custom-logos`).optional().isIn(Object.keys(logos)),
@@ -154,6 +155,7 @@ app.post('/snap', [
   const fnMedia = req.query.media || 'screen';
   const fnOutput = req.query.output || 'pdf';
   const fnFormat = req.query.format || 'A4';
+  const fnPdfLandscape = Boolean(req.query.pdfLandscape) || false;
   const fnAuthUser = req.query.user || '';
   const fnAuthPass = req.query.pass || '';
   const fnCookies = req.query.cookies || '';
@@ -170,7 +172,7 @@ app.post('/snap', [
   // Blame Emma.
   const ip = ated(req);
   let lgParams = { 'url': fnUrl, 'width': fnWidth, 'height': fnHeight, 'scale': fnScale,
-                   'media': fnMedia, 'output': fnOutput, 'format': fnFormat,
+                   'media': fnMedia, 'output': fnOutput, 'format': fnFormat, 'pdfLandscape': fnPdfLandscape,
                    'authuser': fnAuthUser, 'authpass': (fnAuthPass ? '*****' : ''), 'cookies': fnCookies,
                    'selector': fnSelector, 'fullpage': fnFullPage, 'logo': fnLogo,
                    'title': fnHeaderTitle, 'subtitle': fnHeaderSubtitle, 'description': fnHeaderDescription, 'footer': fnFooterText,
@@ -244,6 +246,7 @@ app.post('/snap', [
           pdfOptions = {
             path: tmpPath,
             format: fnFormat,
+            landscape: fnPdfLandscape,
             displayHeaderFooter: true,
             headerTemplate: ``, // default template is used if we don't provide empty string
             footerTemplate: `

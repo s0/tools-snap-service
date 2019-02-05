@@ -40,11 +40,6 @@ Shared service to generate PNG/PDF snapshots of our websites.
 - `user` — (optional) HTTP Basic Authentication username.
 - `pass` — (optional) HTTP Basic Authentication password.
 - `cookies` — (optional) a String representing browser cookies. Just send the contents of `document.cookie` and it should work.
-- `headerTitle` — (optional) Specify a Header Title for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
-- `headerSubtitle` — (optional) Specify a Header Subtitle for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
-- `headerDescription` — (optional) Specify a Header Description for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
-- `footerText` — (optional) Specify custom Footer text for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
-- `locale` — (optional) Localizes the dynamically generated PDF footer strings (pagination and creation date). See [Localization](#localization) for locale options and defaults.
 
 We do our best to validate your input. When found to be invalid, we return **HTTP 422 Unprocessable Entity** and the response body will be a JSON object containing all failed validations.
 
@@ -70,10 +65,8 @@ This class can be used anywhere in your CSS, including within Media Queries (e.g
 
 ### Localization
 
-We currently support the following localizations for PDF footers:
+It is up to the requesting service to manage localization of all strings sent to Snap Service. The service is designed to be as agnostic to your website as possible in order to support the broadest set of use-cases.
 
-- `en` (default)
-- `fr`
 
 ### Custom Logos
 

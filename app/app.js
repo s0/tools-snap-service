@@ -234,7 +234,7 @@ app.post('/snap', [
             path: tmpPath,
             format: fnPdfFormat,
             landscape: fnPdfLandscape,
-            displayHeaderFooter: true,
+            displayHeaderFooter: !!fnPdfHeader || !!fnPdfFooter,
             headerTemplate: fnPdfHeader,
             footerTemplate: fnPdfFooter,
             margin: { top: 0, bottom: '64px', left: 0, right: 0 },

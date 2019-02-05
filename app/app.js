@@ -37,9 +37,6 @@ require('./config');
 // the possible values and give a more informative validation error.
 const logos = require('./logos/_list.json');
 
-// Our list of officially supported translations.
-const locales = require('./locales/_list.json');
-
 // It's impossible to regex a CSS selector so we'll assemble a list of the most
 // common characters. Feel free to add to this list if it's preventing a legitimate
 // selector from being used. The space at the beginning of this string is intentional.
@@ -121,17 +118,12 @@ app.post('/snap', [
   query('media', 'Must be one of the following: print, screen').optional().isIn([ 'print', 'screen' ]),
   query('output', 'Must be one of the following: png, pdf').optional().isIn([ 'png', 'pdf' ]),
   query('selector', `Must be a CSS selector made of the following characters: ${allowedSelectorChars}`).optional().isWhitelisted(allowedSelectorChars),
-  query('format', `Must be one of the following values: ${allowedFormats.join(', ')}`).optional().isIn(allowedFormats),
+  query('pdfFormat', `Must be one of the following values: ${allowedFormats.join(', ')}`).optional().isIn(allowedFormats),
   query('pdfLandscape', 'Must be one of the following: true, false').optional().isBoolean(),
   query('user', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('pass', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('logo', `Must be one of the following values: ${Object.keys(logos).join(', ')}. If you would like to use your site's logo with Snap Service, please read how to add it at https://github.com/UN-OCHA/tools-snap-service#custom-logos`).optional().isIn(Object.keys(logos)),
   query('service', 'Must be an alphanumeric string identifier for the requesting service.').optional().isAlphanumeric(),
-  query('locale', `Must be one of the following language codes: ${Object.keys(locales).join(', ')}`).optional().isIn(Object.keys(locales)),
-  sanitize('headerTitle').escape(),
-  sanitize('headerSubtitle').escape(),
-  sanitize('headerDescription').escape(),
-  sanitize('footerText').escape(),
 ], (req, res) => {
   // debug
   log.debug({ 'query': url.parse(req.url).query }, 'Request received');
@@ -154,7 +146,7 @@ app.post('/snap', [
   const fnScale = Number(req.query.scale) || 2;
   const fnMedia = req.query.media || 'screen';
   const fnOutput = req.query.output || 'pdf';
-  const fnFormat = req.query.format || 'A4';
+  const fnPdfFormat = req.query.pdfFormat || 'A4';
   const fnPdfLandscape = Boolean(req.query.pdfLandscape) || false;
   const fnAuthUser = req.query.user || '';
   const fnAuthPass = req.query.pass || '';
@@ -162,28 +154,21 @@ app.post('/snap', [
   const fnSelector = req.query.selector || '';
   const fnFullPage = (fnSelector) ? false : true;
   const fnLogo = req.query.logo || false;
-  const fnHeaderTitle = req.query.headerTitle || '';
-  const fnHeaderSubtitle = req.query.headerSubtitle || '';
-  const fnHeaderDescription = req.query.headerDescription || '';
-  const fnFooterText = req.query.footerText || '';
-  const fnService = req.query.service;
+  const fnPdfHeader = req.query.pdfHeader || '';
+  const fnPdfFooter = req.query.pdfFooter || '';
+  const fnService = req.query.service || '';
+  let fnHtml = '';
+  let pngOptions = {};
+  let pdfOptions = {};
 
   // Make a nice blob for the logs. ELK will sort this out.
   // Blame Emma.
   const ip = ated(req);
   let lgParams = { 'url': fnUrl, 'width': fnWidth, 'height': fnHeight, 'scale': fnScale,
-                   'media': fnMedia, 'output': fnOutput, 'format': fnFormat, 'pdfLandscape': fnPdfLandscape,
+                   'media': fnMedia, 'output': fnOutput, 'format': fnPdfFormat, 'pdfLandscape': fnPdfLandscape,
                    'authuser': fnAuthUser, 'authpass': (fnAuthPass ? '*****' : ''), 'cookies': fnCookies,
                    'selector': fnSelector, 'fullpage': fnFullPage, 'logo': fnLogo,
-                   'title': fnHeaderTitle, 'subtitle': fnHeaderSubtitle, 'description': fnHeaderDescription, 'footer': fnFooterText,
                    'service': fnService, 'ip': ip }
-
-  const fnLocale = req.query.locale || 'en';
-  const t = require(`./locales/${fnLocale}.js`);
-
-  let fnHtml = '';
-  let pngOptions = {};
-  let pdfOptions = {};
 
   async.series([
     function validateRequest(cb) {
@@ -238,6 +223,8 @@ app.post('/snap', [
        */
       async function createSnap() {
         try {
+          let hasLogo = false;
+
           pngOptions = {
             path: tmpPath,
             fullPage: fnFullPage,
@@ -245,122 +232,31 @@ app.post('/snap', [
 
           pdfOptions = {
             path: tmpPath,
-            format: fnFormat,
+            format: fnPdfFormat,
             landscape: fnPdfLandscape,
-            displayHeaderFooter: true,
-            headerTemplate: ``, // default template is used if we don't provide empty string
-            footerTemplate: `
-              <footer class="pdf-footer">
-                <div class="pdf-footer__left">
-                  ${t['Page']} <span class="pageNumber"></span> ${t['of']} <span class="totalPages"></span>
-                </div>
-                <div class="pdf-footer__right">
-                  <span class="pdf-footer__text">${fnFooterText}</span><br>
-                  ${t['Downloaded']}: <span>${moment().locale(fnLocale).format('D MMM YYYY')}</span><br>
-                </div>
-              </footer>
-              <style type="text/css">
-                *,
-                *:before,
-                *:after {
-                  box-sizing: border-box;
-                  -webkit-print-color-adjust: exact;
-                }
-
-                .pdf-footer {
-                  width: 100%;
-                  font-size: 12px;
-                  margin: 0 7.5mm;
-                  white-space: nowrap;
-
-                  font-family: "Roboto Condensed", Roboto, serif;
-                  font-weight: 400;
-                  font-size: 12px;
-                  color: #4c8cca;
-                }
-                .pdf-footer__left {
-                  position: relative;
-                  top: 28px;
-                }
-                .pdf-footer__right {
-                  text-align: right;
-                }
-              </style>`,
+            displayHeaderFooter: !!fnPdfHeader || !!fnPdfFooter,
+            headerTemplate: fnPdfHeader,
+            footerTemplate: fnPdfFooter,
             margin: { top: 0, bottom: '64px', left: 0, right: 0 },
           };
 
+          // Do string substitution on the fnPdfHeader is the logo was specified.
           if (logos.hasOwnProperty(fnLogo)) {
+            hasLogo = true;
             const pdfLogoFile = __dirname + '/logos/' + logos[fnLogo].filename;
             const pdfLogoData = new Buffer(fs.readFileSync(pdfLogoFile, 'binary'));
-            const pdfLogoEncoded = `data:${mime.lookup(pdfLogoFile)};base64,${pdfLogoData.toString('base64')}`;
-
+            const pdfLogo = {
+              src: `data:${mime.lookup(pdfLogoFile)};base64,${pdfLogoData.toString('base64')}`,
+              width: imgSize(pdfLogoFile).width * .75,
+              height: imgSize(pdfLogoFile).height * .75,
+            };
             pdfOptions.margin.top = imgSize(pdfLogoFile).height + 84;
-            pdfOptions.headerTemplate = `
-              <header class="pdf-header">
-                <div class="pdf-header__meta">
-                  <div class="pdf-header__title">${he.encode(fnHeaderTitle)}</div>
-                  <div class="pdf-header__subtitle">${he.encode(fnHeaderSubtitle)}</div>
-                  <div class="pdf-header__description">${he.encode(fnHeaderDescription)}</div>
-                </div>
-                <div class="pdf-header__logo-wrapper">
-                  <img src="${pdfLogoEncoded}" alt="logo" class="pdf-header__logo">
-                </div>
-              </header>
-              <style type="text/css">
-                *,
-                *:before,
-                *:after {
-                  box-sizing: border-box;
-                  -webkit-print-color-adjust: exact;
-                }
-
-                .pdf-header {
-                  width: 100%;
-                  margin: 2.5mm 7.5mm 7.5mm;
-                  padding-bottom: 10px;
-                  border-bottom: 2px solid #4c8cca;
-
-                  font-family: "Roboto Condensed", Roboto, serif;
-                  font-weight: 400;
-                  font-size: 12px;
-                  white-space: nowrap;
-
-                  display: grid;
-                  grid-template-areas: "logo meta";
-                  grid-template-columns: ${imgSize(pdfLogoFile).width*.75}px 2fr;
-                }
-
-                .pdf-header__meta {
-                  grid-area: meta;
-                  font-size: inherit;
-                  padding-left: 10px;
-                  margin-left: 10px;
-                  border-left: 1px solid #4c8cca;
-                  color: #4c8cca;
-                }
-                .pdf-header__title {
-                  line-height: .9;
-                  font-size: 22px;
-                  font-weight: 700;
-                }
-                .pdf-header__subtitle {
-                  font-size: 15px;
-                }
-                .pdf-header__description {
-                  font-style: italic;
-                }
-
-                .pdf-header__logo-wrapper {
-                  grid-area: logo;
-                }
-                .pdf-header__logo {
-                  width: ${imgSize(pdfLogoFile).width*.75}px;
-                  height: ${imgSize(pdfLogoFile).height*.75}px;
-                  position: relative;
-                  top: 2px;
-                }
-              </style>`;
+            pdfOptions.headerTemplate = fnPdfHeader
+              .replace('__LOGO_SRC__', pdfLogo.src)
+              .replace('__LOGO_WIDTH__', pdfLogo.width)
+              .replace('__LOGO_HEIGHT__', pdfLogo.height);
           }
+
         } catch (err) {
           log.error('createSnap', err);
           return cb(err);

@@ -166,6 +166,7 @@ app.post('/snap', [
   const fnHeaderSubtitle = req.query.headerSubtitle || '';
   const fnHeaderDescription = req.query.headerDescription || '';
   const fnFooterText = req.query.footerText || '';
+  const fnPdfHeader = req.query.pdfHeader || '';
   const fnPdfFooter = req.query.pdfFooter || '';
   const fnService = req.query.service || '';
 
@@ -239,6 +240,8 @@ app.post('/snap', [
        */
       async function createSnap() {
         try {
+          let hasLogo = false;
+
           pngOptions = {
             path: tmpPath,
             fullPage: fnFullPage,
@@ -249,83 +252,28 @@ app.post('/snap', [
             format: fnFormat,
             landscape: fnPdfLandscape,
             displayHeaderFooter: true,
-            headerTemplate: '', // default template is used if we don't provide empty string
+            headerTemplate: fnPdfHeader,
             footerTemplate: fnPdfFooter,
             margin: { top: 0, bottom: '64px', left: 0, right: 0 },
           };
 
+          // Do string substitution on the fnPdfHeader is the logo was specified.
           if (logos.hasOwnProperty(fnLogo)) {
+            hasLogo = true;
             const pdfLogoFile = __dirname + '/logos/' + logos[fnLogo].filename;
             const pdfLogoData = new Buffer(fs.readFileSync(pdfLogoFile, 'binary'));
-            const pdfLogoEncoded = `data:${mime.lookup(pdfLogoFile)};base64,${pdfLogoData.toString('base64')}`;
-
+            const pdfLogo = {
+              src: `data:${mime.lookup(pdfLogoFile)};base64,${pdfLogoData.toString('base64')}`,
+              width: imgSize(pdfLogoFile).width * .75,
+              height: imgSize(pdfLogoFile).height * .75,
+            };
             pdfOptions.margin.top = imgSize(pdfLogoFile).height + 84;
-            pdfOptions.headerTemplate = `
-              <header class="pdf-header">
-                <div class="pdf-header__meta">
-                  <div class="pdf-header__title">${he.encode(fnHeaderTitle)}</div>
-                  <div class="pdf-header__subtitle">${he.encode(fnHeaderSubtitle)}</div>
-                  <div class="pdf-header__description">${he.encode(fnHeaderDescription)}</div>
-                </div>
-                <div class="pdf-header__logo-wrapper">
-                  <img src="${pdfLogoEncoded}" alt="logo" class="pdf-header__logo">
-                </div>
-              </header>
-              <style type="text/css">
-                *,
-                *:before,
-                *:after {
-                  box-sizing: border-box;
-                  -webkit-print-color-adjust: exact;
-                }
-
-                .pdf-header {
-                  width: 100%;
-                  margin: 2.5mm 7.5mm 7.5mm;
-                  padding-bottom: 10px;
-                  border-bottom: 2px solid #4c8cca;
-
-                  font-family: "Roboto Condensed", Roboto, serif;
-                  font-weight: 400;
-                  font-size: 12px;
-                  white-space: nowrap;
-
-                  display: grid;
-                  grid-template-areas: "logo meta";
-                  grid-template-columns: ${imgSize(pdfLogoFile).width*.75}px 2fr;
-                }
-
-                .pdf-header__meta {
-                  grid-area: meta;
-                  font-size: inherit;
-                  padding-left: 10px;
-                  margin-left: 10px;
-                  border-left: 1px solid #4c8cca;
-                  color: #4c8cca;
-                }
-                .pdf-header__title {
-                  line-height: .9;
-                  font-size: 22px;
-                  font-weight: 700;
-                }
-                .pdf-header__subtitle {
-                  font-size: 15px;
-                }
-                .pdf-header__description {
-                  font-style: italic;
-                }
-
-                .pdf-header__logo-wrapper {
-                  grid-area: logo;
-                }
-                .pdf-header__logo {
-                  width: ${imgSize(pdfLogoFile).width*.75}px;
-                  height: ${imgSize(pdfLogoFile).height*.75}px;
-                  position: relative;
-                  top: 2px;
-                }
-              </style>`;
+            pdfOptions.headerTemplate = fnPdfHeader
+              .replace('__LOGO_SRC__', pdfLogo.src)
+              .replace('__LOGO_WIDTH__', pdfLogo.width)
+              .replace('__LOGO_HEIGHT__', pdfLogo.height);
           }
+
         } catch (err) {
           log.error('createSnap', err);
           return cb(err);

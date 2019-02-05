@@ -33,6 +33,8 @@ Shared service to generate PNG/PDF snapshots of our websites.
   - `A5`: 5.83in x 8.27in
   - `A6`: 4.13in x 5.83in
 - `pdfLandscape` — (default `false`) a Boolean indicating whether the PDF should be Landscape. Defaults to Portrait.
+- `pdfHeader` — (optional) inline HTML/CSS to construct a 100% custom PDF Header. The [Puppeteer PDF documentation](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagepdfoptions) contains additional information regarding pagination and other metadata you might want to dynamically generate. It's listed under `headerTemplate` property.
+- `pdfFooter` — (optional) all capabilities, limitations, and documentation references are identical to `pdfHeader`
 - `selector` — (optional) specify a CSS selector. Snap Service will return ONLY the first element which matches your selector.
 - `logo` — (optional) Display your site's logo in the header area of each page on your PDF. See [Custom Logos](#custom-logos) section for instructions on adding your logo to this repository.
 - `user` — (optional) HTTP Basic Authentication username.
@@ -42,10 +44,10 @@ Shared service to generate PNG/PDF snapshots of our websites.
 - `headerSubtitle` — (optional) Specify a Header Subtitle for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
 - `headerDescription` — (optional) Specify a Header Description for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
 - `footerText` — (optional) Specify custom Footer text for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
-- `pdfFooter` — (optional) inline HTML/CSS to construct a 100% custom PDF footer. The [Puppeteer PDF documentation](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagepdfoptions) contains additional information regarding pagination and other metadata you might want to dynamically generate. It's listed under `headerTemplate` property.
 - `locale` — (optional) Localizes the dynamically generated PDF footer strings (pagination and creation date). See [Localization](#localization) for locale options and defaults.
 
 We do our best to validate your input. When found to be invalid, we return **HTTP 422 Unprocessable Entity** and the response body will be a JSON object containing all failed validations.
+
 
 ## Using Snap Service on your website
 
@@ -65,6 +67,7 @@ html[class^='snap'] .my-selector {
 
 This class can be used anywhere in your CSS, including within Media Queries (e.g. `@media print`, `@media screen and (min-width: 700px)`, etc).
 
+
 ### Localization
 
 We currently support the following localizations for PDF footers:
@@ -74,9 +77,9 @@ We currently support the following localizations for PDF footers:
 
 ### Custom Logos
 
-While including remote images in the PDF Header/Footer is not supported by Chrome Puppeteer, it is possible to include your site's logo in the header of a PDF. First, make a PR against this repository making the following two changes:
+While including remote images in the PDF Header/Footer is **not supported** by Chrome Puppeteer, it is possible to include your site's logo in the header of a PDF. First, make a PR against this repository making the following two changes:
 
-* Add the file to `app/logos` directory.
+* Add the SVG within the `app/logos` directory.
 * Edit the `app/logos/_list.json` to include the parameter value you prefer, plus the filename.
 
 ```json
@@ -94,7 +97,12 @@ While including remote images in the PDF Header/Footer is not supported by Chrom
 
 ⚠️ **NOTE: do not upload anything except SVG.** At the present time SVG is the only filetype we accept.
 
-Once your PR has been deployed, you can activate your logo on PDF Snaps using the `logo` parameter (see [API](#api)) and the value you entered into `logos/_list.json`.
+Once your PR has been deployed, you can activate your logo on PDF Snaps using the `logo` parameter (see [API](#api)) and the value you entered into `logos/_list.json`. The logo can be referenced from within `pdfHeader`/`pdfFooter` by using the following strings:
+
+- `__LOGO_SRC__` — a base64-encoded string representation of your SVG logo.
+- `__LOGO_WIDTH__` — the width of your SVG supplied via PR
+- `__LOGO_HEIGHT__` — the height of your SVG supplied via PR
+
 
 ### Custom Fonts
 
@@ -106,6 +114,7 @@ Currently available fonts:
 
 - Roboto (v18)
 - Roboto Condensed (v16)
+
 
 ## Install / Develop
 

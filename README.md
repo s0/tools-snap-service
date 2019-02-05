@@ -42,6 +42,7 @@ Shared service to generate PNG/PDF snapshots of our websites.
 - `headerSubtitle` — (optional) Specify a Header Subtitle for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
 - `headerDescription` — (optional) Specify a Header Description for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
 - `footerText` — (optional) Specify custom Footer text for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
+- `pdfFooter` — (optional) inline HTML/CSS to construct a 100% custom PDF footer. The [Puppeteer PDF documentation](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagepdfoptions) contains additional information regarding pagination and other metadata you might want to dynamically generate. It's listed under `headerTemplate` property.
 - `locale` — (optional) Localizes the dynamically generated PDF footer strings (pagination and creation date). See [Localization](#localization) for locale options and defaults.
 
 We do our best to validate your input. When found to be invalid, we return **HTTP 422 Unprocessable Entity** and the response body will be a JSON object containing all failed validations.
@@ -73,7 +74,7 @@ We currently support the following localizations for PDF footers:
 
 ### Custom Logos
 
-It's possible to include your site's logo in the header of a PDF. First, make a PR against this repository making the following two changes:
+While including remote images in the PDF Header/Footer is not supported by Chrome Puppeteer, it is possible to include your site's logo in the header of a PDF. First, make a PR against this repository making the following two changes:
 
 * Add the file to `app/logos` directory.
 * Edit the `app/logos/_list.json` to include the parameter value you prefer, plus the filename.
@@ -91,7 +92,7 @@ It's possible to include your site's logo in the header of a PDF. First, make a 
 
 ⚠️ **NOTE: this file MUST be valid JSON!** That means double-quoted strings and no trailing commas.
 
-⚠️ **NOTE: do not upload anything except SVG.** At the present time this is the only filetype we accept.
+⚠️ **NOTE: do not upload anything except SVG.** At the present time SVG is the only filetype we accept.
 
 Once your PR has been deployed, you can activate your logo on PDF Snaps using the `logo` parameter (see [API](#api)) and the value you entered into `logos/_list.json`.
 

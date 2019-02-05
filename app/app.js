@@ -166,7 +166,8 @@ app.post('/snap', [
   const fnHeaderSubtitle = req.query.headerSubtitle || '';
   const fnHeaderDescription = req.query.headerDescription || '';
   const fnFooterText = req.query.footerText || '';
-  const fnService = req.query.service;
+  const fnPdfFooter = req.query.pdfFooter || '';
+  const fnService = req.query.service || '';
 
   // Make a nice blob for the logs. ELK will sort this out.
   // Blame Emma.
@@ -248,44 +249,8 @@ app.post('/snap', [
             format: fnFormat,
             landscape: fnPdfLandscape,
             displayHeaderFooter: true,
-            headerTemplate: ``, // default template is used if we don't provide empty string
-            footerTemplate: `
-              <footer class="pdf-footer">
-                <div class="pdf-footer__left">
-                  ${t['Page']} <span class="pageNumber"></span> ${t['of']} <span class="totalPages"></span>
-                </div>
-                <div class="pdf-footer__right">
-                  <span class="pdf-footer__text">${fnFooterText}</span><br>
-                  ${t['Downloaded']}: <span>${moment().locale(fnLocale).format('D MMM YYYY')}</span><br>
-                </div>
-              </footer>
-              <style type="text/css">
-                *,
-                *:before,
-                *:after {
-                  box-sizing: border-box;
-                  -webkit-print-color-adjust: exact;
-                }
-
-                .pdf-footer {
-                  width: 100%;
-                  font-size: 12px;
-                  margin: 0 7.5mm;
-                  white-space: nowrap;
-
-                  font-family: "Roboto Condensed", Roboto, serif;
-                  font-weight: 400;
-                  font-size: 12px;
-                  color: #4c8cca;
-                }
-                .pdf-footer__left {
-                  position: relative;
-                  top: 28px;
-                }
-                .pdf-footer__right {
-                  text-align: right;
-                }
-              </style>`,
+            headerTemplate: '', // default template is used if we don't provide empty string
+            footerTemplate: fnPdfFooter,
             margin: { top: 0, bottom: '64px', left: 0, right: 0 },
           };
 

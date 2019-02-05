@@ -118,7 +118,7 @@ app.post('/snap', [
   query('media', 'Must be one of the following: print, screen').optional().isIn([ 'print', 'screen' ]),
   query('output', 'Must be one of the following: png, pdf').optional().isIn([ 'png', 'pdf' ]),
   query('selector', `Must be a CSS selector made of the following characters: ${allowedSelectorChars}`).optional().isWhitelisted(allowedSelectorChars),
-  query('format', `Must be one of the following values: ${allowedFormats.join(', ')}`).optional().isIn(allowedFormats),
+  query('pdfFormat', `Must be one of the following values: ${allowedFormats.join(', ')}`).optional().isIn(allowedFormats),
   query('pdfLandscape', 'Must be one of the following: true, false').optional().isBoolean(),
   query('user', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('pass', 'Must be an alphanumeric string').optional().isAlphanumeric(),
@@ -146,7 +146,7 @@ app.post('/snap', [
   const fnScale = Number(req.query.scale) || 2;
   const fnMedia = req.query.media || 'screen';
   const fnOutput = req.query.output || 'pdf';
-  const fnFormat = req.query.format || 'A4';
+  const fnPdfFormat = req.query.pdfFormat || 'A4';
   const fnPdfLandscape = Boolean(req.query.pdfLandscape) || false;
   const fnAuthUser = req.query.user || '';
   const fnAuthPass = req.query.pass || '';
@@ -165,7 +165,7 @@ app.post('/snap', [
   // Blame Emma.
   const ip = ated(req);
   let lgParams = { 'url': fnUrl, 'width': fnWidth, 'height': fnHeight, 'scale': fnScale,
-                   'media': fnMedia, 'output': fnOutput, 'format': fnFormat, 'pdfLandscape': fnPdfLandscape,
+                   'media': fnMedia, 'output': fnOutput, 'format': fnPdfFormat, 'pdfLandscape': fnPdfLandscape,
                    'authuser': fnAuthUser, 'authpass': (fnAuthPass ? '*****' : ''), 'cookies': fnCookies,
                    'selector': fnSelector, 'fullpage': fnFullPage, 'logo': fnLogo,
                    'service': fnService, 'ip': ip }
@@ -232,7 +232,7 @@ app.post('/snap', [
 
           pdfOptions = {
             path: tmpPath,
-            format: fnFormat,
+            format: fnPdfFormat,
             landscape: fnPdfLandscape,
             displayHeaderFooter: true,
             headerTemplate: fnPdfHeader,

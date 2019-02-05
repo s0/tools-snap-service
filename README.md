@@ -20,7 +20,7 @@ Shared service to generate PNG/PDF snapshots of our websites.
 - `width` — (default `800`) specify a pixel value for the viewport width.
 - `height` — (default `600`) specify a pixel value for the viewport height.
 - `scale` — (default `2`) specify a device scale (pixel density) to control resolution of PNG output.
-- `format` — (default `A4`) specify a PDF page format from one of the following options available within Puppeteer:
+- `pdfFormat` — (default `A4`) specify a PDF page format from one of the following options available within Puppeteer:
   - `Letter`: 8.5in x 11in
   - `Legal`: 8.5in x 14in
   - `Tabloid`: 11in x 17in

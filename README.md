@@ -33,6 +33,7 @@ Shared service to generate PNG/PDF snapshots of our websites.
   - `A5`: 5.83in x 8.27in
   - `A6`: 4.13in x 5.83in
 - `pdfLandscape` — (default `false`) a Boolean indicating whether the PDF should be Landscape. Defaults to Portrait.
+— `pdfBackground` — (default `false`) a Boolean indicating whether the PDF should print any CSS related to backgrounds. This includes colors, images, and so forth. Equivalent to the `printBackground` parameter of `page.pdf()`.
 - `pdfHeader` — (optional) inline HTML/CSS to construct a 100% custom PDF Header. The [Puppeteer PDF documentation](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagepdfoptions) contains additional information regarding pagination and other metadata you might want to dynamically generate. It's listed under `headerTemplate` property.
 - `pdfFooter` — (optional) all capabilities, limitations, and documentation references are identical to `pdfHeader`
 - `selector` — (optional) specify a CSS selector. Snap Service will return ONLY the first element which matches your selector.

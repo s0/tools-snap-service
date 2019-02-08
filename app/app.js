@@ -120,6 +120,7 @@ app.post('/snap', [
   query('selector', `Must be a CSS selector made of the following characters: ${allowedSelectorChars}`).optional().isWhitelisted(allowedSelectorChars),
   query('pdfFormat', `Must be one of the following values: ${allowedFormats.join(', ')}`).optional().isIn(allowedFormats),
   query('pdfLandscape', 'Must be one of the following: true, false').optional().isBoolean(),
+  query('pdfBackground', 'Must be one of the following: true, false').optional().isBoolean(),
   query('user', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('pass', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('logo', `Must be one of the following values: ${Object.keys(logos).join(', ')}. If you would like to use your site's logo with Snap Service, please read how to add it at https://github.com/UN-OCHA/tools-snap-service#custom-logos`).optional().isIn(Object.keys(logos)),
@@ -147,7 +148,8 @@ app.post('/snap', [
   const fnMedia = req.query.media || 'screen';
   const fnOutput = req.query.output || 'pdf';
   const fnPdfFormat = req.query.pdfFormat || 'A4';
-  const fnPdfLandscape = Boolean(req.query.pdfLandscape) || false;
+  const fnPdfLandscape = Boolean(req.query.pdfLandscape === 'true') || false;
+  const fnPdfBackground = Boolean(req.query.pdfBackground === 'true') || false;
   const fnAuthUser = req.query.user || '';
   const fnAuthPass = req.query.pass || '';
   const fnCookies = req.query.cookies || '';
@@ -234,6 +236,7 @@ app.post('/snap', [
             path: tmpPath,
             format: fnPdfFormat,
             landscape: fnPdfLandscape,
+            printBackground: fnPdfBackground,
             displayHeaderFooter: !!fnPdfHeader || !!fnPdfFooter,
             headerTemplate: fnPdfHeader,
             footerTemplate: fnPdfFooter,

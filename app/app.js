@@ -304,19 +304,21 @@ app.post('/snap', [
           // Set CSS Media
           await page.emulateMedia(fnMedia);
 
-          // Compile cookies. We have to manually specify some extra info such
-          // as host/path in order to create a valid cookie.
+          // Compile cookies if present. We have to manually specify some extra
+          // info such as host/path in order to create a valid cookie.
           let cookies = [];
-          fnCookies.split('; ').map((cookie) => {
-            let thisCookie = {};
-            const [name, value] = cookie.split('=');
+          if (!!fnCookies) {
+            fnCookies.split('; ').map((cookie) => {
+              let thisCookie = {};
+              const [name, value] = cookie.split('=');
 
-            thisCookie.url = fnUrl;
-            thisCookie.name = name;
-            thisCookie.value = value;
+              thisCookie.url = fnUrl;
+              thisCookie.name = name;
+              thisCookie.value = value;
 
-            cookies.push(thisCookie);
-          });
+              cookies.push(thisCookie);
+            });
+          }
 
           // Set cookies.
           cookies.forEach(async function(cookie) {

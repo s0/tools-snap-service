@@ -150,14 +150,14 @@ app.post('/snap', [
   const fnPdfFormat = req.query.pdfFormat || 'A4';
   const fnPdfLandscape = Boolean(req.query.pdfLandscape === 'true') || false;
   const fnPdfBackground = Boolean(req.query.pdfBackground === 'true') || false;
+  const fnPdfHeader = req.query.pdfHeader || '';
+  const fnPdfFooter = req.query.pdfFooter || '';
   const fnAuthUser = req.query.user || '';
   const fnAuthPass = req.query.pass || '';
   const fnCookies = req.query.cookies || '';
   const fnSelector = req.query.selector || '';
   const fnFullPage = (fnSelector) ? false : true;
   const fnLogo = req.query.logo || false;
-  const fnPdfHeader = req.query.pdfHeader || '';
-  const fnPdfFooter = req.query.pdfFooter || '';
   const fnService = req.query.service || '';
   let fnHtml = '';
   let pngOptions = {};
@@ -166,11 +166,27 @@ app.post('/snap', [
   // Make a nice blob for the logs. ELK will sort this out.
   // Blame Emma.
   const ip = ated(req);
-  let lgParams = { 'url': fnUrl, 'width': fnWidth, 'height': fnHeight, 'scale': fnScale,
-                   'media': fnMedia, 'output': fnOutput, 'format': fnPdfFormat, 'pdfLandscape': fnPdfLandscape,
-                   'authuser': fnAuthUser, 'authpass': (fnAuthPass ? '*****' : ''), 'cookies': fnCookies,
-                   'selector': fnSelector, 'fullpage': fnFullPage, 'logo': fnLogo,
-                   'service': fnService, 'ip': ip }
+  let lgParams = {
+    'url': fnUrl,
+    'width': fnWidth,
+    'height': fnHeight,
+    'scale': fnScale,
+    'media': fnMedia,
+    'output': fnOutput,
+    'format': fnPdfFormat,
+    'pdfLandscape': fnPdfLandscape,
+    'pdfBackground': fnPdfBackground,
+    'pdfHeader': fnPdfHeader,
+    'pdfFooter': fnPdfFooter,
+    'authuser': fnAuthUser,
+    'authpass': (fnAuthPass ? '*****' : ''),
+    'cookies': fnCookies,
+    'selector': fnSelector,
+    'fullpage': fnFullPage,
+    'logo': fnLogo,
+    'service': fnService,
+    'ip': ip,
+  };
 
   async.series([
     function validateRequest(cb) {

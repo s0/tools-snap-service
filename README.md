@@ -33,7 +33,12 @@ Shared service to generate PNG/PDF snapshots of our websites.
   - `A5`: 5.83in x 8.27in
   - `A6`: 4.13in x 5.83in
 - `pdfLandscape` — (default `false`) a Boolean indicating whether the PDF should be Landscape. Defaults to Portrait.
-— `pdfBackground` — (default `false`) a Boolean indicating whether the PDF should print any CSS related to backgrounds. This includes colors, images, and so forth. Equivalent to the `printBackground` parameter of `page.pdf()`.
+- `pdfBackground` — (default `false`) a Boolean indicating whether the PDF should print any CSS related to backgrounds. This includes colors, base64-endcoded images that you've supplied, and so forth.
+- `pdfMarginTop` (default `0`) set the PDF margin-top. Override CSS unit using `pdfMarginUnit`.
+- `pdfMarginRight` (default `0`) set the PDF margin-right. Override CSS unit using `pdfMarginUnit`.
+- `pdfMarginBottom` (default `64`) set the PDF margin-bottom. This is set to a non-zero value to match the majority of our properties which have a common set of info at the bottom of the PDF. You can override the value just like any of the margin params. Override CSS unit using `pdfMarginUnit`.
+- `pdfMarginLeft` (default `0`) set the PDF margin-left. Override CSS unit using `pdfMarginUnit`.
+- `pdfMarginUnit` (default `px`) set the CSS unit of all PDF margins. Must be one of the following: `px`, `mm`, `cm`, `in`.
 - `pdfHeader` — (optional) inline HTML/CSS to construct a 100% custom PDF Header. The [Puppeteer PDF documentation](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagepdfoptions) contains additional information regarding pagination and other metadata you might want to dynamically generate. It's listed under `headerTemplate` property.
 - `pdfFooter` — (optional) all capabilities, limitations, and documentation references are identical to `pdfHeader`
 - `selector` — (optional) specify a CSS selector. Snap Service will return ONLY the first element which matches your selector.

@@ -45,6 +45,9 @@ const allowedSelectorChars = ' #.[]()-_=+:~^*abcdefghijklmnopqrstuvwxyzABCDEFGHI
 // PDF paper sizes
 const allowedFormats = ['Letter', 'Legal', 'Tabloid', 'Ledger', 'A0', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6'];
 
+// PDF margin units
+const allowedPdfMarginUnits = ['px', 'mm', 'cm', 'in'];
+
 // Helper function.
 function ated(request) {
   return request.headers['x-forwarded-for'] ||
@@ -121,6 +124,11 @@ app.post('/snap', [
   query('pdfFormat', `Must be one of the following values: ${allowedFormats.join(', ')}`).optional().isIn(allowedFormats),
   query('pdfLandscape', 'Must be one of the following: true, false').optional().isBoolean(),
   query('pdfBackground', 'Must be one of the following: true, false').optional().isBoolean(),
+  query('pdfMarginTop', 'Must be a decimal with no units. Use pdfMarginUnit to set units.').optional().isNumeric(),
+  query('pdfMarginRight', 'Must be a decimal with no units. Use pdfMarginUnit to set units.').optional().isNumeric(),
+  query('pdfMarginBottom', 'Must be a decimal with no units. Use pdfMarginUnit to set units.').optional().isNumeric(),
+  query('pdfMarginLeft', 'Must be a decimal with no units. Use pdfMarginUnit to set units.').optional().isNumeric(),
+  query('pdfMarginUnit', `Must be one of the following values: ${allowedPdfMarginUnits.join(', ')}`).optional().isIn(allowedPdfMarginUnits),
   query('user', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('pass', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('logo', `Must be one of the following values: ${Object.keys(logos).join(', ')}. If you would like to use your site's logo with Snap Service, please read how to add it at https://github.com/UN-OCHA/tools-snap-service#custom-logos`).optional().isIn(Object.keys(logos)),
@@ -150,6 +158,11 @@ app.post('/snap', [
   const fnPdfFormat = req.query.pdfFormat || 'A4';
   const fnPdfLandscape = Boolean(req.query.pdfLandscape === 'true') || false;
   const fnPdfBackground = Boolean(req.query.pdfBackground === 'true') || false;
+  const fnPdfMarginTop = req.query.pdfMarginTop || '0';
+  const fnPdfMarginRight = req.query.pdfMarginRight || '0';
+  const fnPdfMarginBottom = req.query.pdfMarginBottom || '64';
+  const fnPdfMarginLeft = req.query.pdfMarginLeft || '0';
+  const fnPdfMarginUnit = req.query.pdfMarginUnit || 'px';
   const fnPdfHeader = req.query.pdfHeader || '';
   const fnPdfFooter = req.query.pdfFooter || '';
   const fnAuthUser = req.query.user || '';
@@ -176,6 +189,11 @@ app.post('/snap', [
     'format': fnPdfFormat,
     'pdfLandscape': fnPdfLandscape,
     'pdfBackground': fnPdfBackground,
+    'pdfMarginTop': fnPdfMarginTop,
+    'pdfMarginRight': fnPdfMarginRight,
+    'pdfMarginBottom': fnPdfMarginBottom,
+    'pdfMarginLeft': fnPdfMarginLeft,
+    'pdfMarginUnit': fnPdfMarginUnit,
     'pdfHeader': fnPdfHeader,
     'pdfFooter': fnPdfFooter,
     'authuser': fnAuthUser,
@@ -256,7 +274,12 @@ app.post('/snap', [
             displayHeaderFooter: !!fnPdfHeader || !!fnPdfFooter,
             headerTemplate: fnPdfHeader,
             footerTemplate: fnPdfFooter,
-            margin: { top: 0, bottom: '64px', left: 0, right: 0 },
+            margin: {
+              top: fnPdfMarginTop + fnPdfMarginUnit,
+              right: fnPdfMarginRight + fnPdfMarginUnit,
+              bottom: fnPdfMarginBottom + fnPdfMarginUnit,
+              left: fnPdfMarginLeft + fnPdfMarginUnit,
+            },
           };
 
           // Do string substitution on the fnPdfHeader is the logo was specified.
@@ -269,7 +292,7 @@ app.post('/snap', [
               width: imgSize(pdfLogoFile).width * .75,
               height: imgSize(pdfLogoFile).height * .75,
             };
-            pdfOptions.margin.top = imgSize(pdfLogoFile).height + 84;
+            pdfOptions.margin.top = imgSize(pdfLogoFile).height + 84 + 'px';
             pdfOptions.headerTemplate = fnPdfHeader
               .replace('__LOGO_SRC__', pdfLogo.src)
               .replace('__LOGO_WIDTH__', pdfLogo.width)

@@ -20,7 +20,7 @@ Shared service to generate PNG/PDF snapshots of our websites.
 - `width` — (default `800`) specify a pixel value for the viewport width.
 - `height` — (default `600`) specify a pixel value for the viewport height.
 - `scale` — (default `2`) specify a device scale (pixel density) to control resolution of PNG output.
-- `format` — (default `A4`) specify a PDF page format from one of the following options available within Puppeteer:
+- `pdfFormat` — (default `A4`) specify a PDF page format from one of the following options available within Puppeteer:
   - `Letter`: 8.5in x 11in
   - `Legal`: 8.5in x 14in
   - `Tabloid`: 11in x 17in
@@ -32,18 +32,23 @@ Shared service to generate PNG/PDF snapshots of our websites.
   - `A4`: 8.27in x 11.7in
   - `A5`: 5.83in x 8.27in
   - `A6`: 4.13in x 5.83in
+- `pdfLandscape` — (default `false`) a Boolean indicating whether the PDF should be Landscape. Defaults to Portrait.
+- `pdfBackground` — (default `false`) a Boolean indicating whether the PDF should print any CSS related to backgrounds. This includes colors, base64-endcoded images that you've supplied, and so forth.
+- `pdfMarginTop` (default `0`) set the PDF margin-top. Override CSS unit using `pdfMarginUnit`.
+- `pdfMarginRight` (default `0`) set the PDF margin-right. Override CSS unit using `pdfMarginUnit`.
+- `pdfMarginBottom` (default `64`) set the PDF margin-bottom. This is set to a non-zero value to match the majority of our properties which have a common set of info at the bottom of the PDF. You can override the value just like any of the margin params. Override CSS unit using `pdfMarginUnit`.
+- `pdfMarginLeft` (default `0`) set the PDF margin-left. Override CSS unit using `pdfMarginUnit`.
+- `pdfMarginUnit` (default `px`) set the CSS unit of all PDF margins. Must be one of the following: `px`, `mm`, `cm`, `in`.
+- `pdfHeader` — (optional) inline HTML/CSS to construct a 100% custom PDF Header. The [Puppeteer PDF documentation](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagepdfoptions) contains additional information regarding pagination and other metadata you might want to dynamically generate. It's listed under `headerTemplate` property.
+- `pdfFooter` — (optional) all capabilities, limitations, and documentation references are identical to `pdfHeader`
 - `selector` — (optional) specify a CSS selector. Snap Service will return ONLY the first element which matches your selector.
 - `logo` — (optional) Display your site's logo in the header area of each page on your PDF. See [Custom Logos](#custom-logos) section for instructions on adding your logo to this repository.
 - `user` — (optional) HTTP Basic Authentication username.
 - `pass` — (optional) HTTP Basic Authentication password.
 - `cookies` — (optional) a String representing browser cookies. Just send the contents of `document.cookie` and it should work.
-- `headerTitle` — (optional) Specify a Header Title for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
-- `headerSubtitle` — (optional) Specify a Header Subtitle for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
-- `headerDescription` — (optional) Specify a Header Description for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
-- `footerText` — (optional) Specify custom Footer text for each page of the PDF. ASCII characters allowed, and input will be HTML-encoded.
-- `locale` — (optional) Localizes the dynamically generated PDF footer strings (pagination and creation date). See [Localization](#localization) for locale options and defaults.
 
 We do our best to validate your input. When found to be invalid, we return **HTTP 422 Unprocessable Entity** and the response body will be a JSON object containing all failed validations.
+
 
 ## Using Snap Service on your website
 
@@ -63,18 +68,17 @@ html[class^='snap'] .my-selector {
 
 This class can be used anywhere in your CSS, including within Media Queries (e.g. `@media print`, `@media screen and (min-width: 700px)`, etc).
 
+
 ### Localization
 
-We currently support the following localizations for PDF footers:
+It is up to the requesting service to manage localization of all strings sent to Snap Service. The service is designed to be as agnostic to your website as possible in order to support the broadest set of use-cases.
 
-- `en` (default)
-- `fr`
 
 ### Custom Logos
 
-It's possible to include your site's logo in the header of a PDF. First, make a PR against this repository making the following two changes:
+While including remote images in the PDF Header/Footer is **not supported** by Chrome Puppeteer, it is possible to include your site's logo in the header of a PDF. First, make a PR against this repository making the following two changes:
 
-* Add the file to `app/logos` directory.
+* Add the SVG within the `app/logos` directory.
 * Edit the `app/logos/_list.json` to include the parameter value you prefer, plus the filename.
 
 ```json
@@ -90,9 +94,14 @@ It's possible to include your site's logo in the header of a PDF. First, make a 
 
 ⚠️ **NOTE: this file MUST be valid JSON!** That means double-quoted strings and no trailing commas.
 
-⚠️ **NOTE: do not upload anything except SVG.** At the present time this is the only filetype we accept.
+⚠️ **NOTE: do not upload anything except SVG.** At the present time SVG is the only filetype we accept.
 
-Once your PR has been deployed, you can activate your logo on PDF Snaps using the `logo` parameter (see [API](#api)) and the value you entered into `logos/_list.json`.
+Once your PR has been deployed, you can activate your logo on PDF Snaps using the `logo` parameter (see [API](#api)) and the value you entered into `logos/_list.json`. The logo can be referenced from within `pdfHeader`/`pdfFooter` by using the following strings:
+
+- `__LOGO_SRC__` — a base64-encoded string representation of your SVG logo.
+- `__LOGO_WIDTH__` — the width of your SVG supplied via PR
+- `__LOGO_HEIGHT__` — the height of your SVG supplied via PR
+
 
 ### Custom Fonts
 
@@ -104,6 +113,7 @@ Currently available fonts:
 
 - Roboto (v18)
 - Roboto Condensed (v16)
+
 
 ## Install / Develop
 

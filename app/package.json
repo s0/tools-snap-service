@@ -1,7 +1,7 @@
 {
   "name": "snapper",
   "description": "Node.js web service interface to puppeteer/chrome for generating PDFs and PNGs from HTML.",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "start": "./node_modules/.bin/pm2 start app.js --no-daemon --watch",

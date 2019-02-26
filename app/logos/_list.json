@@ -4,5 +4,8 @@
   },
   "hrinfo": {
     "filename": "hr-info.svg"
+  },
+  "sink": {
+    "filename": "sink.svg"
   }
 }

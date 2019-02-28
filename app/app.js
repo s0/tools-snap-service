@@ -138,6 +138,26 @@ app.post('/snap', [
   // debug
   log.debug({ 'query': url.parse(req.url).query }, 'Request received');
 
+  // If both `url` and `html` are empty, we need to return a special error that
+  // requires valid input.
+  if (!req.query.url && !req.body.html) {
+    return res.status(400).json({ errors: [
+      {
+        'location': 'query',
+        'param': 'url',
+        'value': undefined,
+        'msg': 'You must supply either `url` as a querystring parameter, or `html` as a URL-encoded form field.',
+      },
+      {
+        'location': 'body',
+        'param': 'html',
+        'value': undefined,
+        'msg': 'You must supply either `url` as a querystring parameter, or `html` as a URL-encoded form field.',
+      },
+    ]});
+  }
+
+
   // Check for validation errors and return immediately if request was invalid.
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -151,6 +171,7 @@ app.post('/snap', [
 
   // Assign validated querystring params to variables and set defaults.
   const fnUrl = req.query.url || false;
+  const fnHtml = req.body.html || '';
   const fnWidth = Number(req.query.width) || 800;
   const fnHeight = Number(req.query.height) || 600;
   const fnScale = Number(req.query.scale) || 2;
@@ -173,7 +194,8 @@ app.post('/snap', [
   const fnFullPage = (fnSelector) ? false : true;
   const fnLogo = req.query.logo || false;
   const fnService = req.query.service || '';
-  let fnHtml = req.body.html || '';
+
+  // Declare options objects here so that multiple scopes have access to them.
   let pngOptions = {};
   let pdfOptions = {};
 

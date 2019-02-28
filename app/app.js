@@ -258,7 +258,6 @@ app.post('/snap', [
             return cb(new Error('An error occurred while trying to validate the HTML post data.'));
           }
 
-          lgParams.html = fnHtml;
           lgParams.size = sizeHtml;
           lgParams.tmpfile = tmpPath;
         });

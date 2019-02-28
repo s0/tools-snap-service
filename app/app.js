@@ -19,7 +19,7 @@ const http = require('http');
 const express = require('express');
 const bodyParser = require('body-parser');
 const methodOverride = require('method-override');
-const { query, validationResult } = require('express-validator/check');
+const { query, body, validationResult } = require('express-validator/check');
 const { sanitize } = require('express-validator/filter');
 const url = require('url');
 
@@ -114,7 +114,8 @@ app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
 });
 
 app.post('/snap', [
-  query('url', 'Must be a valid, fully-qualified URL').isURL({ require_protocol: true, disallow_auth: true }),
+  body('html', '').optional(),
+  query('url', 'Must be a valid, fully-qualified URL').optional().isURL({ require_protocol: true, disallow_auth: true }),
   query('width', 'Must be an integer with no units').optional().isInt(),
   query('height', 'Must be an integer with no units').optional().isInt(),
   query('scale', 'Must be an integer in the range: 1-3').optional().isInt({ min: 1, max: 3 }),
@@ -172,7 +173,7 @@ app.post('/snap', [
   const fnFullPage = (fnSelector) ? false : true;
   const fnLogo = req.query.logo || false;
   const fnService = req.query.service || '';
-  let fnHtml = '';
+  let fnHtml = req.body.html || '';
   let pngOptions = {};
   let pdfOptions = {};
 
@@ -181,6 +182,7 @@ app.post('/snap', [
   const ip = ated(req);
   let lgParams = {
     'url': fnUrl,
+    'html': fnHtml,
     'width': fnWidth,
     'height': fnHeight,
     'scale': fnScale,
@@ -234,10 +236,9 @@ app.post('/snap', [
             return cb(new Error('An error occurred while trying to validate the HTML post data.'));
           }
 
-          tmpPath = `${tmpPath}.${fnOutput}`;
-
-          lgParams.size = sizeHtml
-          lgParams.tmpfile = tmpPath
+          lgParams.html = fnHtml;
+          lgParams.size = sizeHtml;
+          lgParams.tmpfile = tmpPath;
         });
       }
       else if (req.query.url) {

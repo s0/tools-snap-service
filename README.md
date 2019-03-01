@@ -59,9 +59,9 @@ Send any combination of the following as querystring parameters:
 
 We do our best to validate your input. When found to be invalid, we return **`HTTP 422 Unprocessable Entity`** and the response body will be a JSON object containing all failed validations.
 
-**Headers:**
+### Headers
 
-- `X-Forwarded-For`: The remote client address making the request. This allows the snap service to log the address.
+- `X-Forwarded-For` — The remote client address making the request. This allows the snap service to log the address.
 
 
 ## Using Snap Service on your website

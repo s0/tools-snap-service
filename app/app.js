@@ -138,8 +138,7 @@ app.post('/snap', [
   // debug
   log.debug({ 'query': url.parse(req.url).query }, 'Request received');
 
-  // If both `url` and `html` are empty, we need to return a special error that
-  // requires valid input.
+  // If neither `url` and `html` are present, return 400 requiring valid input.
   if (!req.query.url && !req.body.html) {
     return res.status(400).json({ errors: [
       {
@@ -157,8 +156,25 @@ app.post('/snap', [
     ]});
   }
 
+  // If both `url` and `html` are present, return 400 requiring valid input.
+  if (req.query.url && req.body.html) {
+    return res.status(400).json({ errors: [
+      {
+        'location': 'query',
+        'param': 'url',
+        'value': req.query.url,
+        'msg': 'You must supply either `url` as a querystring parameter, OR `html` as a URL-encoded form field, but not both.',
+      },
+      {
+        'location': 'body',
+        'param': 'html',
+        'value': req.body.html,
+        'msg': 'You must supply either `url` as a querystring parameter, OR `html` as a URL-encoded form field, but not both.',
+      },
+    ]});
+  }
 
-  // Check for validation errors and return immediately if request was invalid.
+  // Validate input errors, return 422 for any problems.
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(422).json({ errors: errors.array() });

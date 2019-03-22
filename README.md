@@ -144,6 +144,4 @@ docker-compose up
 
 Now you can `POST` to `localhost:8442/snap` and it should return Snaps to you.
 
-To use nodemon and have the service restart automatically as you edit the code, edit `debian-snapper-nodejs/run_node` and change the last command to `exec npm dev`.
-
 It will probably be necessary to use an app that helps you formulate and store common queries you want to test. Command line tools like `curl` are perfectly capable, but if you want something more visual try [Insomnia](https://insomnia.rest/). It lets you configure everything and save each query for repeated use.

@@ -260,8 +260,8 @@ app.post('/snap', [
           fnHtml = req.files.html.path;
           tmpPath = `${fnHtml}.${fnOutput}`;
 
-          lgParams.size = sizeHtml
-          lgParams.tmpfile = tmpPath
+          lgParams.size = sizeHtml;
+          lgParams.tmpfile = tmpPath;
         });
       }
       else if (req.body && req.body.html && req.body.html.length) {
@@ -281,7 +281,7 @@ app.post('/snap', [
       else if (req.query.url) {
         const digest = crypto.createHash('md5').update(fnUrl).digest('hex');
         tmpPath = `/tmp/snap-${Date.now()}-${digest}.${fnOutput}`;
-        lgParams.tmpfile = tmpPath
+        lgParams.tmpfile = tmpPath;
       }
       else {
         const noCaseErrMsg = 'An HTML file was not uploaded or could not be accessed.';

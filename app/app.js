@@ -398,7 +398,7 @@ app.post('/snap', [
               'waitUntil': 'load',
             });
           } else {
-            await page.setContent(fnHtml);
+            await page.goto(`data:text/html,${fnHtml}`, { waitUntil: 'networkidle0'});
           }
 
           // Add a conditional class indicating what type of Snap is happening.

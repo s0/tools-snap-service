@@ -11,10 +11,20 @@ Shared service to generate PNG/PDF snapshots of our websites.
 - `POST` to `/snap`
 - `Content-Type: application/x-www-form-urlencoded`
 
-**Parameters:**
+### URL or HTML input
 
-- `url` — (**required**) the URL you want to render.
-- `service` — (**recommended**) an alphanumeric identifier for the requesting service. You can more easily generate usage reports by specifying the requesting service.
+One of the following two inputs is **required**:
+
+- `url` — (querystring parameter) the remote URL you want to render.
+- `html` — (urlencoded form data) the URL-encoded HTML you want to render.
+
+If you do not specify either of these, Snap Service will return **`HTTP 400 Bad Request`**.
+
+### Parameters
+
+Send any combination of the following as querystring parameters:
+
+- `service` — (**recommended**) an alphanumeric identifier for the requesting service. You can more easily generate usage reports by specifying the requesting service. Must be an alphanumeric string such as `dsreports` or `hrinfo`.
 - `output` — (default `pdf`) specify `png` if you want a PNG image or `pdf` for PDF.
 - `media` — (default `screen`) specify a CSS Media. Only other option is `print`.
 - `width` — (default `800`) specify a pixel value for the viewport width.
@@ -41,14 +51,19 @@ Shared service to generate PNG/PDF snapshots of our websites.
 - `pdfMarginUnit` (default `px`) set the CSS unit of all PDF margins. Must be one of the following: `px`, `mm`, `cm`, `in`.
 - `pdfHeader` — (optional) inline HTML/CSS to construct a 100% custom PDF Header. The [Puppeteer PDF documentation](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagepdfoptions) contains additional information regarding pagination and other metadata you might want to dynamically generate. It's listed under `headerTemplate` property.
 - `pdfFooter` — (optional) all capabilities, limitations, and documentation references are identical to `pdfHeader`
-- `selector` — (optional) specify a CSS selector. Snap Service will return ONLY the first element which matches your selector.
+- `selector` — (optional) specify a CSS selector. Snap Service will return ONLY the first element which matches your selector. _NOTE: due to limitations of Chrome Puppeteer, **PDFs cannot render selectors, only whole pages.**_
 - `logo` — (optional) Display your site's logo in the header area of each page on your PDF. See [Custom Logos](#custom-logos) section for instructions on adding your logo to this repository.
 - `user` — (optional) HTTP Basic Authentication username.
 - `pass` — (optional) HTTP Basic Authentication password.
 - `cookies` — (optional) a String representing browser cookies. Just send the contents of `document.cookie` and it should work.
+- `ua` — (optional) a String representing the User-Agent making the request. This can come directly from a client, or if you make your Snap request from within a server, use whatever logs you have at your disposal (UA, nginx headers, etc)
 
-We do our best to validate your input. When found to be invalid, we return **HTTP 422 Unprocessable Entity** and the response body will be a JSON object containing all failed validations.
+We do our best to validate your input. When found to be invalid, we return **`HTTP 422 Unprocessable Entity`** and the response body will be a JSON object containing all failed validations.
 
+### Headers
+
+- `X-Forwarded-For` — The remote client address making the request. This allows the snap service to log the address.
+- `User-Agent` — The remote user-agent of the client making the request. This value is overridden by the `ua` parameter, if present.
 
 ## Using Snap Service on your website
 
@@ -129,7 +144,5 @@ docker-compose up
 ```
 
 Now you can `POST` to `localhost:8442/snap` and it should return Snaps to you.
-
-To use nodemon and have the service restart automatically as you edit the code, edit `debian-snapper-nodejs/run_node` and change the last command to `exec npm dev`.
 
 It will probably be necessary to use an app that helps you formulate and store common queries you want to test. Command line tools like `curl` are perfectly capable, but if you want something more visual try [Insomnia](https://insomnia.rest/). It lets you configure everything and save each query for repeated use.

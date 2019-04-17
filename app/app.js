@@ -211,7 +211,7 @@ app.post('/snap', [
   const fnFullPage = (fnSelector) ? false : true;
   const fnLogo = req.query.logo || false;
   const fnService = req.query.service || '';
-  const fnUserAgent = req.query.ua || '';
+  const fnUserAgent = req.query.ua || req.headers['user-agent'] || '';
 
   // Declare options objects here so that multiple scopes have access to them.
   let pngOptions = {};

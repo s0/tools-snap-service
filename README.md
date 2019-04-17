@@ -63,7 +63,7 @@ We do our best to validate your input. When found to be invalid, we return **`HT
 ### Headers
 
 - `X-Forwarded-For` — The remote client address making the request. This allows the snap service to log the address.
-
+- `User-Agent` — The remote user-agent of the client making the request. This value is overridden by the `ua` parameter, if present.
 
 ## Using Snap Service on your website
 

@@ -134,6 +134,7 @@ app.post('/snap', [
   query('pass', 'Must be an alphanumeric string').optional().isAlphanumeric(),
   query('logo', `Must be one of the following values: ${Object.keys(logos).join(', ')}. If you would like to use your site's logo with Snap Service, please read how to add it at https://github.com/UN-OCHA/tools-snap-service#custom-logos`).optional().isIn(Object.keys(logos)),
   query('service', 'Must be an alphanumeric string identifier for the requesting service.').optional().isAlphanumeric(),
+  query('ua', '').optional(),
 ], (req, res) => {
   // debug
   log.debug({ 'query': url.parse(req.url).query }, 'Request received');
@@ -210,6 +211,7 @@ app.post('/snap', [
   const fnFullPage = (fnSelector) ? false : true;
   const fnLogo = req.query.logo || false;
   const fnService = req.query.service || '';
+  const fnUserAgent = req.query.ua || '';
 
   // Declare options objects here so that multiple scopes have access to them.
   let pngOptions = {};
@@ -243,6 +245,7 @@ app.post('/snap', [
     'fullpage': fnFullPage,
     'logo': fnLogo,
     'service': fnService,
+    'ua': fnUserAgent,
     'ip': ip,
   };
 
@@ -260,8 +263,8 @@ app.post('/snap', [
           fnHtml = req.files.html.path;
           tmpPath = `${fnHtml}.${fnOutput}`;
 
-          lgParams.size = sizeHtml
-          lgParams.tmpfile = tmpPath
+          lgParams.size = sizeHtml;
+          lgParams.tmpfile = tmpPath;
         });
       }
       else if (req.body && req.body.html && req.body.html.length) {
@@ -281,7 +284,7 @@ app.post('/snap', [
       else if (req.query.url) {
         const digest = crypto.createHash('md5').update(fnUrl).digest('hex');
         tmpPath = `/tmp/snap-${Date.now()}-${digest}.${fnOutput}`;
-        lgParams.tmpfile = tmpPath
+        lgParams.tmpfile = tmpPath;
       }
       else {
         const noCaseErrMsg = 'An HTML file was not uploaded or could not be accessed.';

@@ -56,6 +56,7 @@ Send any combination of the following as querystring parameters:
 - `user` — (optional) HTTP Basic Authentication username.
 - `pass` — (optional) HTTP Basic Authentication password.
 - `cookies` — (optional) a String representing browser cookies. Just send the contents of `document.cookie` and it should work.
+- `ua` — (optional) a String representing the User-Agent making the request. This can come directly from a client, or if you make your Snap request from within a server, use whatever logs you have at your disposal (UA, nginx headers, etc)
 
 We do our best to validate your input. When found to be invalid, we return **`HTTP 422 Unprocessable Entity`** and the response body will be a JSON object containing all failed validations.
 

@@ -398,10 +398,12 @@ app.post('/snap', [
           // in the POST or a URL in the querystring.
           if (fnUrl) {
             await page.goto(fnUrl, {
-              'waitUntil': 'load',
+              waitUntil: ['load', 'networkidle0'],
             });
           } else {
-            await page.goto(`data:text/html,${fnHtml}`, { waitUntil: 'networkidle0'});
+            await page.goto(`data:text/html,${fnHtml}`, {
+              waitUntil: ['load', 'networkidle0'],
+            });
           }
 
           // Add a conditional class indicating what type of Snap is happening.
@@ -420,8 +422,24 @@ app.post('/snap', [
             // Output whole document or DOM fragment?
             if (fnSelector) {
               pngOptions.omitBackground = true;
+
+              // Isolate DOM element using the selector supplied, and do some
+              // preprocessing before we take the screenshot. Sometimes a tall
+              // webpage can present issues preventing screenshots of particular
+              // elements when using the elementHandle.
+              //
+              // If we manually take the steps that are impled by using
+              // elementHandle.screenshot(), then the result is successful.
               const fragment = await page.$(fnSelector);
-              await fragment.screenshot(pngOptions);
+              const elementBoundingBox = await fragment.boundingBox();
+              pngOptions.clip = {
+                x: elementBoundingBox.x,
+                y: elementBoundingBox.y,
+                width: elementBoundingBox.width,
+                height: elementBoundingBox.height,
+              };
+
+              await page.screenshot(pngOptions);
             } else {
               await page.screenshot(pngOptions);
             }

@@ -18,7 +18,7 @@ One of the following two inputs is **required**:
 - `url` — (querystring parameter) the remote URL you want to render.
 - `html` — (urlencoded form data) the URL-encoded HTML you want to render.
 
-If you do not specify either of these, Snap Service will return **`HTTP 400 Bad Request`**.
+If you do not specify either of these, Snap Service will return **`HTTP 422 Unprocessable Entity`**.
 
 ### Parameters
 

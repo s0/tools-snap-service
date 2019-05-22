@@ -139,9 +139,9 @@ app.post('/snap', [
   // debug
   log.debug({ 'query': url.parse(req.url).query }, 'Request received');
 
-  // If neither `url` and `html` are present, return 400 requiring valid input.
+  // If neither `url` and `html` are present, return 422 requiring valid input.
   if (!req.query.url && !req.body.html) {
-    return res.status(400).json({ errors: [
+    return res.status(422).json({ errors: [
       {
         'location': 'query',
         'param': 'url',
@@ -157,9 +157,9 @@ app.post('/snap', [
     ]});
   }
 
-  // If both `url` and `html` are present, return 400 requiring valid input.
+  // If both `url` and `html` are present, return 422 requiring valid input.
   if (req.query.url && req.body.html) {
-    return res.status(400).json({ errors: [
+    return res.status(422).json({ errors: [
       {
         'location': 'query',
         'param': 'url',

@@ -18,13 +18,13 @@ One of the following two inputs is **required**:
 - `url` — (querystring parameter) the remote URL you want to render.
 - `html` — (urlencoded form data) the URL-encoded HTML you want to render.
 
-If you do not specify either of these, Snap Service will return **`HTTP 400 Bad Request`**.
+If you do not specify either of these, Snap Service will return **`HTTP 422 Unprocessable Entity`**.
 
 ### Parameters
 
 Send any combination of the following as querystring parameters:
 
-- `service` — (**recommended**) an alphanumeric identifier for the requesting service. You can more easily generate usage reports by specifying the requesting service. Must be an alphanumeric string such as `dsreports` or `hrinfo`.
+- `service` — (**recommended**) an alphanumeric identifier for the requesting service. You can more easily generate usage reports by specifying the requesting service. Must be an alphanumeric string (hyphens, underscores are also allowed) such as `dsreports`, `hr-info` or `hid_api`.
 - `output` — (default `pdf`) specify `png` if you want a PNG image or `pdf` for PDF.
 - `media` — (default `screen`) specify a CSS Media. Only other option is `print`.
 - `width` — (default `800`) specify a pixel value for the viewport width.

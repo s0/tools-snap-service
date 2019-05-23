@@ -24,7 +24,7 @@ If you do not specify either of these, Snap Service will return **`HTTP 422 Unpr
 
 Send any combination of the following as querystring parameters:
 
-- `service` — (**recommended**) an alphanumeric identifier for the requesting service. You can more easily generate usage reports by specifying the requesting service. Must be an alphanumeric string (underscores are also allowed) such as `dsreports` or `hid_api`.
+- `service` — (**recommended**) an alphanumeric identifier for the requesting service. You can more easily generate usage reports by specifying the requesting service. Must be an alphanumeric string (hyphens, underscores are also allowed) such as `dsreports`, `hr-info` or `hid_api`.
 - `output` — (default `pdf`) specify `png` if you want a PNG image or `pdf` for PDF.
 - `media` — (default `screen`) specify a CSS Media. Only other option is `print`.
 - `width` — (default `800`) specify a pixel value for the viewport width.

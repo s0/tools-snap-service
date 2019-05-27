@@ -135,6 +135,7 @@ app.post('/snap', [
   query('logo', `Must be one of the following values: ${Object.keys(logos).join(', ')}. If you would like to use your site's logo with Snap Service, please read how to add it at https://github.com/UN-OCHA/tools-snap-service#custom-logos`).optional().isIn(Object.keys(logos)),
   query('service', 'Must be an alphanumeric string identifier (hyphens, underscores are also allowed).').optional().matches(/^[A-Za-z0-9_\-]+$/),
   query('ua', '').optional(),
+  query('delay', 'Must be an integer between 0-10000 inclusive.').optional().isInt({ min: 0, max: 10000 }),
 ], (req, res) => {
   // debug
   log.debug({ 'query': url.parse(req.url).query }, 'Request received');
@@ -212,6 +213,7 @@ app.post('/snap', [
   const fnLogo = req.query.logo || false;
   const fnService = req.query.service || '';
   const fnUserAgent = req.query.ua || req.headers['user-agent'] || '';
+  const fnDelay = Number(req.query.delay) || 0;
 
   // Declare options objects here so that multiple scopes have access to them.
   let pngOptions = {};
@@ -247,6 +249,7 @@ app.post('/snap', [
     'service': fnService,
     'ua': fnUserAgent,
     'ip': ip,
+    'delay': fnDelay,
   };
 
   async.series([

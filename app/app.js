@@ -347,7 +347,6 @@ app.post('/snap', [
           }
 
         } catch (err) {
-          log.error('createSnap', err);
           return cb(err);
         }
 
@@ -455,7 +454,7 @@ app.post('/snap', [
           await browser.disconnect();
         }
         catch (err) {
-          throw new Error('🔥 ' + err);
+          throw new Error(err);
         }
       }
 
@@ -492,7 +491,6 @@ app.post('/snap', [
 
         // return cb(null, 'everything is fine');
       }).catch((err) => {
-        log.error('createSnap', err);
         return cb(err);
       });
     },

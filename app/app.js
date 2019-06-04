@@ -1,5 +1,6 @@
 /**
- * print-api
+ * tools-snap-service
+ *
  * node.js web service for puppeteer/chrome for generating PDFs or PNGs from HTML.
  *
  * Accepts POST requests to /snap with either a HTTP file upload sent with
@@ -29,6 +30,8 @@ const mime = require('mime-types');
 const imgSize = require('image-size');
 const he = require('he');
 const log = require('./log');
+const util = require('util');
+const dump = util.inspect;
 
 // We don't set this as a variable because it defines its own vars inside
 require('./config');
@@ -136,6 +139,8 @@ app.post('/snap', [
   query('service', 'Must be an alphanumeric string identifier (hyphens, underscores are also allowed).').optional().matches(/^[A-Za-z0-9_\-]+$/),
   query('ua', '').optional(),
   query('delay', 'Must be an integer between 0-10000 inclusive.').optional().isInt({ min: 0, max: 10000 }),
+  query('debug', 'Must be a Boolean').optional().isBoolean(),
+  query('block', 'Must be a comma-separated list of domains (alphanumeric, hyphens, dots, commas)').optional().matches(/^[A-Za-z0-9\.\,\-]+$/),
 ], (req, res) => {
   // debug
   log.debug({ 'query': url.parse(req.url).query }, 'Request received');
@@ -214,6 +219,8 @@ app.post('/snap', [
   const fnService = req.query.service || '';
   const fnUserAgent = req.query.ua || req.headers['user-agent'] || '';
   const fnDelay = Number(req.query.delay) || 0;
+  const fnDebug = Boolean(req.query.debug) || false;
+  const fnBlock = req.query.block || '';
 
   // Declare options objects here so that multiple scopes have access to them.
   let pngOptions = {};
@@ -250,6 +257,8 @@ app.post('/snap', [
     'ua': fnUserAgent,
     'ip': ip,
     'delay': fnDelay,
+    'debug': '',
+    'block': fnBlock,
   };
 
   async.series([
@@ -362,6 +371,51 @@ app.post('/snap', [
           // Set duration until Timeout
           await page.setDefaultNavigationTimeout(60 * 1000);
 
+          // We want to intercept requests in order to dump logs or block domains.
+          if (fnDebug || fnBlock) {
+            await page.setRequestInterception(true);
+
+            // BLOCK ADS/TRACKERS
+            await page.on('request', (req) => {
+              const blacklist = fnBlock.split(',');
+
+              let domain = null;
+              const frags = req.url().split('/');
+              if (frags.length > 2) {
+                 domain = frags[2];
+              }
+
+              // Block request if a blacklisted domain is found
+              if (fnBlock && blacklist.some((blocked) => domain.indexOf(blocked) !== -1)) {
+                lgParams.debug += 'Snap blocked a request to ' + domain + '\n';
+                req.abort();
+              } else {
+                req.continue();
+              }
+            });
+          }
+
+          if (fnDebug) {
+            // Log caught exceptions
+            page.on('error', (err) => {
+              lgParams.debug += err.toString();
+            });
+
+            // Log uncaught exceptions
+            page.on('pageerror', (err) => {
+              lgParams.debug += err.toString();
+            });
+
+            // Forward all console output
+            page.on('console', msg => {
+              const errText = msg._args && msg._args[0] && msg._args[0]._remoteObject && msg._args[0]._remoteObject.value;
+              lgParams.debug += msg._type.padStart(7) +' '+ dump(errText) + '\n';
+              // for (let i = 0; i < msg.args().length; ++i) {
+              //   console.log(`${msg.args()[i]}`);
+              // }
+            });
+          }
+
           // Use HTTP auth if needed (for testing staging envs)
           if (fnAuthUser && fnAuthPass) {
             await page.authenticate({ username: fnAuthUser, password: fnAuthPass });
@@ -425,27 +479,54 @@ app.post('/snap', [
             if (fnSelector) {
               pngOptions.omitBackground = true;
 
-              // Isolate DOM element using the selector supplied, and do some
-              // preprocessing before we take the screenshot. Sometimes a tall
-              // webpage can present issues preventing screenshots of particular
-              // elements when using the elementHandle.
-              //
-              // If we manually take the steps that are impled by using
-              // elementHandle.screenshot(), then the result is successful.
-              const fragment = await page.$(fnSelector);
-              const elementBoundingBox = await fragment.boundingBox();
-              pngOptions.clip = {
-                x: elementBoundingBox.x,
-                y: elementBoundingBox.y,
-                width: elementBoundingBox.width,
-                height: elementBoundingBox.height,
-              };
+              // Make sure our selector is in the DOM.
+              await page.waitForSelector(fnSelector).then(async () => {
+                // Select the element from the DOM.
+                const fragment = await page.$(fnSelector).catch((err) => {
+                  throw ('Selector could not be targeted by Puppeteer');
+                });
 
-              await page.screenshot(pngOptions);
+                // Do some preprocessing before we take the screenshot.
+                // Sometimes a tall webpage can present issues preventing
+                // screenshots of particular elements when using the elementHandle.
+                //
+                // If we manually take the steps that are implied by using
+                // elementHandle.screenshot(), then the result is successful.
+                const elementBoundingBox = await fragment.boundingBox();
+                pngOptions.clip = {
+                  x: elementBoundingBox.x,
+                  y: elementBoundingBox.y,
+                  width: elementBoundingBox.width,
+                  height: elementBoundingBox.height,
+                };
+
+                // If an artificial delay was specified, wait for that amount of time.
+                if (fnDelay) {
+                  await page.waitFor(fnDelay);
+                }
+
+                // Finally, take the screenshot.
+                await page.screenshot(pngOptions);
+              }).catch((err) => {
+                throw ('Selector never appeared in the DOM');
+              });
             } else {
+
+              // If an artificial delay was specified, wait for that amount of time.
+              if (fnDelay) {
+                await page.waitFor(fnDelay);
+              }
+
+              // Finally, take the screenshot.
               await page.screenshot(pngOptions);
             }
           } else {
+
+            // If an artificial delay was specified, wait for that amount of time.
+            if (fnDelay) {
+              await page.waitFor(fnDelay);
+            }
+
             await page.pdf(pdfOptions);
           }
 
@@ -470,7 +551,7 @@ app.post('/snap', [
             const duration = ((Date.now() - startTime) / 1000);
             res.end();
             lgParams.duration = duration
-            log.info(lgParams, `PNG ${tmpPath} successfully generated for ${fnUrl}${fnHtml} in ${duration} seconds.`);
+            log.info(lgParams, `PNG ${tmpPath} successfully generated in ${duration} seconds.`);
             return fs.unlink(tmpPath, cb);
           });
         } else {
@@ -479,17 +560,11 @@ app.post('/snap', [
             const duration = ((Date.now() - startTime) / 1000);
             res.end();
             lgParams.duration = duration
-            log.info(lgParams, `PDF ${tmpPath} successfully generated for ${fnUrl}${fnHtml} in ${duration} seconds.`);
+            log.info(lgParams, `PDF ${tmpPath} successfully generated in ${duration} seconds.`);
             return fs.unlink(tmpPath, cb);
           });
         }
 
-        // if (fnHtml.length && fnUrl === false) {
-        //   return fs.unlink(fnHtml, cb);
-        // }
-        // log.info(`Successfully removed input (${fnHtml}) and output (${tmpPath}) files.`);
-
-        // return cb(null, 'everything is fine');
       }).catch((err) => {
         return cb(err);
       });
@@ -500,7 +575,7 @@ app.post('/snap', [
 
     if (err) {
       lgParams.duration = duration
-      log.warn(lgParams, `Hardcopy generation failed for HTML ${fnUrl}${fnHtml} in ${duration} seconds. ${err}`);
+      log.warn(lgParams, `Snap FAILED in ${duration} seconds. ${err}`);
       res.status(500).send('' + err);
     }
   });

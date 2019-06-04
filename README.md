@@ -18,7 +18,7 @@ One of the following two inputs is **required**:
 - `url` — (querystring parameter) the remote URL you want to render.
 - `html` — (urlencoded form data) the URL-encoded HTML you want to render.
 
-If you do not specify either of these, Snap Service will return **`HTTP 422 Unprocessable Entity`**.
+If you do not specify either of these, or specify both, Snap Service will return **`HTTP 422 Unprocessable Entity`**.
 
 ### Parameters
 
@@ -57,6 +57,9 @@ Send any combination of the following as querystring parameters:
 - `pass` — (optional) HTTP Basic Authentication password.
 - `cookies` — (optional) a String representing browser cookies. Just send the contents of `document.cookie` and it should work.
 - `ua` — (optional) a String representing the User-Agent making the request. This can come directly from a client, or if you make your Snap request from within a server, use whatever logs you have at your disposal (UA, nginx headers, etc)
+- `delay` — (optional) a Number of milliseconds of additional delay you'd like to add before taking the screenshot. Must be an integer between 0-10000 inclusive.
+- `debug` — (optional) a Boolean meant as a developer-facing parameter to increase the amount of info seen in the logs.
+- `block` — (optional) a String containing a comma-separated list of strings to search for within domains. When any string you send is found within a request, it will be blocked (e.g. supplying `google` will block all of the following: `google.com`, `fonts.googleapis.com`, `google-analytics.com`).
 
 We do our best to validate your input. When found to be invalid, we return **`HTTP 422 Unprocessable Entity`** and the response body will be a JSON object containing all failed validations.
 

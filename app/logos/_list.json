@@ -7,5 +7,8 @@
   },
   "sink": {
     "filename": "sink.svg"
+  },
+  "fts": {
+    "filename": "fts.svg"
   }
 }

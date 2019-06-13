@@ -346,9 +346,6 @@ app.post('/snap', [
               height: imgSize(pdfLogoFile).height * .75,
             };
 
-            // TODO: margin-top calculation is DSR-specific logic that should be
-            //       amended using the new pdfMargin params once they're shipped
-            pdfOptions.margin.top = imgSize(pdfLogoFile).height + 84 + 'px';
             pdfOptions.headerTemplate = fnPdfHeader
               .replace('__LOGO_SRC__', pdfLogo.src)
               .replace('__LOGO_WIDTH__', pdfLogo.width)

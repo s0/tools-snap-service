@@ -14,7 +14,6 @@ services:
       - DEBUG="*"
       - PORT=${HTTP_PORT}
       - NODE_ENV=dockerdev
-      - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
     ports:
       - "${HTTP_ADDR}:${HTTP_PORT}:${HTTP_PORT}"
     mem_limit: 2g

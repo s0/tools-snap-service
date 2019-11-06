@@ -422,7 +422,7 @@ app.post('/snap', [
           await page.setViewport({ width: fnWidth, height: fnHeight, deviceScaleFactor: fnScale });
 
           // Set CSS Media
-          await page.emulateMedia(fnMedia);
+          await page.emulateMediaType(fnMedia);
 
           // Compile cookies if present. We have to manually specify some extra
           // info such as host/path in order to create a valid cookie.

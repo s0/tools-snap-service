@@ -1,4 +1,4 @@
-FROM unocha/debian-snap-base:10-buster-node12-201907-02 as builder
+FROM unocha/debian-snap-base:10-buster-node12-201911-01 as builder
 
 WORKDIR /srv/src
 COPY . .
@@ -9,7 +9,7 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 RUN cd app && \
     npm install
 
-FROM unocha/debian-snap-base:10-buster-node12-201907-02
+FROM unocha/debian-snap-base:10-buster-node12-201911-01
 
 WORKDIR "${NODE_APP_DIR}"
 

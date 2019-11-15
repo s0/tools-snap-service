@@ -483,27 +483,37 @@ app.post('/snap', [
                   throw ('Selector could not be targeted by Puppeteer');
                 });
 
-                // Do some preprocessing before we take the screenshot.
-                // Sometimes a tall webpage can present issues preventing
-                // screenshots of particular elements when using the elementHandle.
-                //
-                // If we manually take the steps that are implied by using
-                // elementHandle.screenshot(), then the result is successful.
-                const elementBoundingBox = await fragment.boundingBox();
-                pngOptions.clip = {
-                  x: elementBoundingBox.x,
-                  y: elementBoundingBox.y,
-                  width: elementBoundingBox.width,
-                  height: elementBoundingBox.height,
-                };
-
                 // If an artificial delay was specified, wait for that amount of time.
                 if (fnDelay) {
                   await page.waitFor(fnDelay);
                 }
 
                 // Finally, take the screenshot.
-                await page.screenshot(pngOptions);
+                //
+                // NOTE: in previous versions of Puppeteer we had difficulties
+                // with PNG bounding boxes. We fixed it by switching to the a
+                // manual method of clipping PNGs using fragment.boundingBox()
+                // then executing page.screenshot().
+                //
+                // After a few Chrome/Puppeteer upgrades, the problem returned
+                // in a slightly different form, again resolved by commenting
+                // the code back out and using the "convenience" method again:
+                // fragment.screenshot()
+                //
+                // It might be necessary to flip-flop between these two methods
+                // from time to time so it's been left intact but commented out.
+                //
+                // @see https://humanitarian.atlassian.net/browse/SNAP-51
+                await fragment.screenshot(pngOptions);
+
+                // const elementBoundingBox = await fragment.boundingBox();
+                // pngOptions.clip = {
+                //   x: elementBoundingBox.x,
+                //   y: elementBoundingBox.y,
+                //   width: elementBoundingBox.width,
+                //   height: elementBoundingBox.height,
+                // };
+                // await page.screenshot(pngOptions);
               }).catch((err) => {
                 throw ('Selector never appeared in the DOM');
               });

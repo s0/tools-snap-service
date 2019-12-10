@@ -117,8 +117,8 @@ While including remote images in the PDF Header/Footer is **not supported** by C
 Once your PR has been deployed, you can activate your logo on PDF Snaps using the `logo` parameter (see [API](#api)) and the value you entered into `logos/_list.json`. The logo can be referenced from within `pdfHeader`/`pdfFooter` by using the following strings:
 
 - `__LOGO_SRC__` — a base64-encoded string representation of your SVG logo.
-- `__LOGO_WIDTH__` — the width of your SVG supplied via PR
-- `__LOGO_HEIGHT__` — the height of your SVG supplied via PR
+- `__LOGO_WIDTH__` — the width of your SVG determined by server
+- `__LOGO_HEIGHT__` — the height of your SVG determined by server
 
 
 ### Custom Fonts

@@ -339,7 +339,7 @@ app.post('/snap', [
           if (logos.hasOwnProperty(fnLogo)) {
             hasLogo = true;
             const pdfLogoFile = __dirname + '/logos/' + logos[fnLogo].filename;
-            const pdfLogoData = new Buffer(fs.readFileSync(pdfLogoFile, 'binary'));
+            const pdfLogoData = new Buffer.from(fs.readFileSync(pdfLogoFile, 'binary'));
             const pdfLogo = {
               src: `data:${mime.lookup(pdfLogoFile)};base64,${pdfLogoData.toString('base64')}`,
               width: imgSize(pdfLogoFile).width * .75,

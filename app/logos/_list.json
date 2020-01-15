@@ -1,4 +1,7 @@
 {
+  "cerf": {
+    "filename": "cerf.svg"
+  },
   "ocha": {
     "filename": "ocha.svg"
   },
@@ -7,5 +10,8 @@
   },
   "sink": {
     "filename": "sink.svg"
+  },
+  "fts": {
+    "filename": "fts.svg"
   }
 }

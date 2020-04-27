@@ -116,6 +116,10 @@ app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
   res.send('Error');
 });
 
+// Health check
+app.get('/status', (req, res) => res.status(204).send());
+
+// Snaps
 app.post('/snap', [
   body('html', '').optional(),
   query('url', 'Must be a valid, fully-qualified URL').optional().isURL({ require_protocol: true, disallow_auth: true }),

@@ -107,6 +107,8 @@ app.use(bodyParser.urlencoded({
 
 app.use(methodOverride());
 
+app.disable('x-powered-by');
+
 app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
   if (process.env.NODE_ENV !== 'test') {
     log.error(`Error: ${JSON.stringify(err)}`);

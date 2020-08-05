@@ -4,64 +4,261 @@
 >
 > 🤣 It takes screenshots!
 
-Shared service to generate PNG/PDF snapshots of our websites.
+Shared service to generate PNG/PDF snapshots of OCHA websites.
+
+This service is the result of auditing several internally-maintained PDF/PNG generators within OCHA. We consolidated all the common features into one shared service that is highly available for all properties to use simultaneously. If you want a new feature you are welcome to file a ticket in JIRA in the OPS board (specify `SnapService` Component when creating ticket).
+
+:droplet: _Working with Drupal? [Use the `ocha_snap` module to get started quickly](https://github.com/UN-OCHA/ocha_snap)_.
+
+**Table of Contents**
+
+- [API](#api)
+  - [Required Parameters](#required-parameters)
+  - [Optional Parameters](#optional-parameters)
+  - [Headers](#headers)
+- [Using Snap Service on your website](#using-snap-service-on-your-website)
+  - [Localization](#localization)
+  - [Custom Logos](#custom-logos)
+  - [Custom Fonts](#custom-fonts)
+- [Install / Develop locally](#install--develop-locally)
 
 ## API
 
-- `POST` to `/snap`
-- `Content-Type: application/x-www-form-urlencoded`
+You **MUST** use `POST /snap` to request Snaps. We do not serve `GET` requests because we want to discourage people hotlinking to Snaps, and also to control bot traffic.
 
-### URL or HTML input
+If you still want to use a GET request, you may proxy the request through your server and change the verb to `POST` on your web head before passing the request through to the Snap Service.
 
-One of the following two inputs is **required**:
+#### `POST /snap`
 
-- `url` — (querystring parameter) the remote URL you want to render.
-- `html` — (urlencoded form data) the URL-encoded HTML you want to render.
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|_null_   |**yes**   |_N/A_   |
 
-If you do not specify either of these, or specify both, Snap Service will return **`HTTP 422 Unprocessable Entity`**.
 
-### Parameters
+### Required Parameters
 
-Send any combination of the following as querystring parameters:
+You **MUST** send **ONE** of the following (`url` or `html`).
 
-- `service` — (**recommended**) an alphanumeric identifier for the requesting service. You can more easily generate usage reports by specifying the requesting service. Must be an alphanumeric string (hyphens, underscores are also allowed) such as `dsreports`, `hr-info` or `hid_api`.
-- `output` — (default `pdf`) specify `png` if you want a PNG image or `pdf` for PDF.
-- `media` — (default `screen`) specify a CSS Media. Only other option is `print`.
-- `width` — (default `800`) specify a pixel value for the viewport width.
-- `height` — (default `600`) specify a pixel value for the viewport height.
-- `scale` — (default `2`) specify a device scale (pixel density) to control resolution of PNG output.
-- `pdfFormat` — (default `A4`) specify a PDF page format from one of the following options available within Puppeteer:
-  - `Letter`: 8.5in x 11in
-  - `Legal`: 8.5in x 14in
-  - `Tabloid`: 11in x 17in
-  - `Ledger`: 17in x 11in
-  - `A0`: 33.1in x 46.8in
-  - `A1`: 23.4in x 33.1in
-  - `A2`: 16.5in x 23.4in
-  - `A3`: 11.7in x 16.5in
-  - `A4`: 8.27in x 11.7in
-  - `A5`: 5.83in x 8.27in
-  - `A6`: 4.13in x 5.83in
-- `pdfLandscape` — (default `false`) a Boolean indicating whether the PDF should be Landscape. Defaults to Portrait.
-- `pdfBackground` — (default `false`) a Boolean indicating whether the PDF should print any CSS related to backgrounds. This includes colors, base64-endcoded images that you've supplied, and so forth.
-- `pdfMarginTop` (default `0`) set the PDF margin-top. Override CSS unit using `pdfMarginUnit`.
-- `pdfMarginRight` (default `0`) set the PDF margin-right. Override CSS unit using `pdfMarginUnit`.
-- `pdfMarginBottom` (default `64`) set the PDF margin-bottom. This is set to a non-zero value to match the majority of our properties which have a common set of info at the bottom of the PDF. You can override the value just like any of the margin params. Override CSS unit using `pdfMarginUnit`.
-- `pdfMarginLeft` (default `0`) set the PDF margin-left. Override CSS unit using `pdfMarginUnit`.
-- `pdfMarginUnit` (default `px`) set the CSS unit of all PDF margins. Must be one of the following: `px`, `mm`, `cm`, `in`.
-- `pdfHeader` — (optional) inline HTML/CSS to construct a 100% custom PDF Header. The [Puppeteer PDF documentation](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagepdfoptions) contains additional information regarding pagination and other metadata you might want to dynamically generate. It's listed under `headerTemplate` property.
-- `pdfFooter` — (optional) all capabilities, limitations, and documentation references are identical to `pdfHeader`
-- `selector` — (optional) specify a CSS selector. Snap Service will return ONLY the first element which matches your selector. _NOTE: due to limitations of Chrome Puppeteer, **PDFs cannot render selectors, only whole pages.**_
-- `logo` — (optional) Display your site's logo in the header area of each page on your PDF. See [Custom Logos](#custom-logos) section for instructions on adding your logo to this repository.
-- `user` — (optional) HTTP Basic Authentication username.
-- `pass` — (optional) HTTP Basic Authentication password.
-- `cookies` — (optional) a String representing browser cookies. Just send the contents of `document.cookie` and it should work.
-- `ua` — (optional) a String representing the User-Agent making the request. This can come directly from a client, or if you make your Snap request from within a server, use whatever logs you have at your disposal (UA, nginx headers, etc)
-- `delay` — (optional) a Number of milliseconds of additional delay you'd like to add before taking the screenshot. Must be an integer between 0-10000 inclusive.
-- `debug` — (optional) a Boolean meant as a developer-facing parameter to increase the amount of info seen in the logs.
-- `block` — (optional) a String containing a comma-separated list of strings to search for within domains. When any string you send is found within a request, it will be blocked (e.g. supplying `google` will block all of the following: `google.com`, `fonts.googleapis.com`, `google-analytics.com`).
+#### `url`
+String representing the webpage URL you want to Snap.
 
-We do our best to validate your input. When found to be invalid, we return **`HTTP 422 Unprocessable Entity`** and the response body will be a JSON object containing all failed validations.
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|_null_   |**yes**¹  |String  |
+
+#### `html`
+The URL-encoded HTML you want to render. Send with `Content-Type: application/x-www-form-urlencoded` as your encoding.
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|_null_   |**yes**¹  |String  |
+
+¹ **EITHER** `url` or `html` are required, but send only one of them! If you do not specify either of these, or you specify both, Snap Service will return **`HTTP 422 Unprocessable Entity`**.
+
+#### `service`
+While it won't affect the output you receive from Snap Service, this parameter allows our Ops team to monitor and report your usage of the shared Snap service. It also allows us to prioritize support/feature requests.
+
+Must be an alphanumeric string (hyphens, underscores are also allowed) such as `dsreports`, `hr-info` or `hid_api`.
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|_null_   |**yes**   |String  |
+
+
+### Optional Parameters
+
+Send any combination of the following as querystring parameters. We do our best to validate your input. When found to be invalid, we return **`HTTP 422 Unprocessable Entity`** and the response body will be a JSON object containing all failed validations.
+
+#### `output`
+Specify `png` if you want a PNG image or `pdf` for PDF.
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|_null_   |no        |String  |
+
+
+#### `media`
+Specify a CSS Media. Options are `screen` or `print`.
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|`screen` |no        |String  |
+
+
+#### `width`
+Specify a pixel value for the viewport width.
+
+The Snap Service implicitly assumes that you are Snapping a responsive website. if you are having problems with layout, it might resolve things to simply specify a wider `width` that is similar to a desktop monitor, such as `1280` (with a corresponding `height`).
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|`800`    |no        |integer |
+
+#### `height`
+Specify a pixel value for the viewport height.
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|`600`    |no        |integer |
+
+#### `scale`
+Specify a device scale (pixel density) to control resolution of PNG output.
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|`2`      |no        |Integer |
+
+#### `pdfFormat`
+
+Specify a PDF page format from one of the following options available within Puppeteer:
+- `Letter`: 8.5in x 11in
+- `Legal`: 8.5in x 14in
+- `Tabloid`: 11in x 17in
+- `Ledger`: 17in x 11in
+- `A0`: 33.1in x 46.8in
+- `A1`: 23.4in x 33.1in
+- `A2`: 16.5in x 23.4in
+- `A3`: 11.7in x 16.5in
+- `A4`: 8.27in x 11.7in
+- `A5`: 5.83in x 8.27in
+- `A6`: 4.13in x 5.83in
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|`A4`     |no        |String  |
+
+
+#### `pdfLandscape`
+Boolean indicating whether the PDF should be Landscape. Defaults to Portrait.
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|`false`  |no        |Boolean |
+
+#### `pdfBackground`
+Boolean indicating whether the PDF should print any CSS related to backgrounds. This includes colors, base64-endcoded images that you've supplied, and so forth.
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|`false`  |no        |Boolean |
+
+#### `pdfMarginTop`
+Specify the PDF margin-top. Override CSS unit using `pdfMarginUnit`.
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|`0`      |no        |Integer |
+
+#### `pdfMarginRight`
+Specify the PDF margin-right. Override CSS unit using `pdfMarginUnit`.
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|`0`      |no        |Integer |
+
+#### `pdfMarginBottom`
+Specify the PDF margin-bottom. This is set to a non-zero value to match the majority of our properties which have a common set of info at the bottom of the PDF. You can override the value just like any of the margin params. Override CSS unit using `pdfMarginUnit`.
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|`64`     |no        |Integer |
+
+#### `pdfMarginLeft`
+Specify the PDF margin-left. Override CSS unit using `pdfMarginUnit`.
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|`0`      |no        |Integer |
+
+#### `pdfMarginUnit`
+Specify the CSS unit of all PDF margins. Must be one of the following: `px`, `mm`, `cm`, `in`.
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|`px`     |no        |String  |
+
+#### `pdfHeader`
+Supply inline HTML/CSS to construct a 100% custom PDF Header. The [Puppeteer PDF documentation](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagepdfoptions) contains additional information regarding pagination and other metadata you might want to dynamically generate. It's listed under `headerTemplate` property.
+
+You **MUST** URL-encode this parameter or it will probably contain content that will break your request.
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|_null_   |no        |String  |
+
+
+#### `pdfFooter`
+All capabilities, limitations, and documentation references are identical to `pdfHeader`. [See Puppeteer docs](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagepdfoptions)
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|_null_   |no        |String  |
+
+#### `selector`
+Specify a CSS selector. Send something very specific, such as an `#html-id`. If you send a generic selector that matches many elements on your page, then Snap Service will only return the **FIRST** element that matches your selector.
+
+> :warning: Due to limitations of Chrome Puppeteer, **PDFs cannot render selectors**, only whole pages.
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|_null_   |no        |String  |
+
+
+#### `logo`
+Display your site's logo in the header area of each page on your PDF. See [Custom Logos](#custom-logos) section for instructions on adding your logo to this repository.
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|_null_   |no        |String  |
+
+#### `user`
+HTTP Basic Authentication username.
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|_null_   |no        |String  |
+
+#### `pass`
+HTTP Basic Authentication password.
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|_null_   |no        |String  |
+
+#### `cookies`
+String representing browser cookies. Just send the contents of `document.cookie` from the client-side and it should work.
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|_null_   |no        |String  |
+
+#### `ua`
+String representing the User-Agent making the request. This can come directly from a client, or if you make your Snap request from within a server, use whatever logs you have at your disposal (UA, nginx headers, etc)
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|_null_   |no        |String  |
+
+#### `delay`
+Number of milliseconds of additional delay you'd like to add before taking the screenshot. Must be an integer between 0-10000 inclusive.
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|`0`      |no        |Integer |
+
+#### `debug`
+Boolean meant as a developer-facing parameter to increase the amount of info seen in the logs.
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|`false`  |no        |Boolean |
+
+#### `block`
+String containing a comma-separated list of strings to search for within domains. When any string you send is found within a request, it will be blocked (e.g. supplying `google` will block all of the following: `google.com`, `fonts.googleapis.com`, `google-analytics.com`).
+
+|Default  |Required  |Type    |
+|---------|----------|--------|
+|_null_   |no        |String  |
 
 ### Headers
 
@@ -89,7 +286,7 @@ This class can be used anywhere in your CSS, including within Media Queries (e.g
 
 ### Localization
 
-It is up to the requesting service to manage localization of all strings sent to Snap Service. The service is designed to be as agnostic to your website as possible in order to support the broadest set of use-cases.
+It is up to the requesting service to manage localization of all strings sent to Snap Service. The service is designed to be as agnostic to your website as possible in order to support the broadest set of use-cases. We support a very versatile font-family by default (Roboto) in order to ensure that many character sets are supported.
 
 
 ### Custom Logos
@@ -133,7 +330,7 @@ Currently available fonts:
 - Roboto Condensed (v16)
 
 
-## Install / Develop
+## Install / Develop locally
 
 The node container will do all the npm installation for you. No need to do it locally. Just run the Docker commands to get started.
 

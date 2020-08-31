@@ -23,6 +23,7 @@ const methodOverride = require('method-override');
 const { query, body, validationResult } = require('express-validator/check');
 const { sanitize } = require('express-validator/filter');
 const url = require('url');
+const { Semaphore } = require('await-semaphore');
 
 const puppeteer = require('puppeteer');
 const moment = require('moment');
@@ -65,6 +66,13 @@ function ated(request) {
 // but (just like a normal web browser) we only want one. We'll open a new "tab"
 // each time our `/snap` route is invoked by reusing the established connection.
 let browserWSEndpoint = '';
+
+/**
+ * A semaphore to limit the maximum number of concurrent active requests to
+ * puppeteer, and require that new requests wait until previous ones are
+ * disconnected before connecting.
+ */
+const PUPPETEER_SEMAPHORE = new Semaphore(process.env.MAX_CONCURRENT_REQS || 10);
 
 async function connectPuppeteer() {
   let browser;
@@ -362,132 +370,169 @@ app.post('/snap', [
           return cb(err);
         }
 
-        try {
-          // Access the Chromium instance by either launching or connecting to
-          // Puppeteer.
-          const browser = await connectPuppeteer();
+        PUPPETEER_SEMAPHORE.use(async () => {
+          try {
+            // Access the Chromium instance by either launching or connecting to
+            // Puppeteer.
+            const browser = await connectPuppeteer();
 
-          // New Puppeteer Incognito context and create a new page within.
-          const context = await browser.createIncognitoBrowserContext();
-          const page = await context.newPage();
+            // New Puppeteer Incognito context and create a new page within.
+            const context = await browser.createIncognitoBrowserContext();
+            const page = await context.newPage();
 
-          // Set duration until Timeout
-          await page.setDefaultNavigationTimeout(60 * 1000);
+            // Set duration until Timeout
+            await page.setDefaultNavigationTimeout(60 * 1000);
 
-          // We want to intercept requests in order to dump logs or block domains.
-          if (fnDebug || fnBlock) {
-            await page.setRequestInterception(true);
+            // We want to intercept requests in order to dump logs or block domains.
+            if (fnDebug || fnBlock) {
+              await page.setRequestInterception(true);
 
-            // BLOCK ADS/TRACKERS
-            await page.on('request', (req) => {
-              const blacklist = fnBlock.split(',');
+              // BLOCK ADS/TRACKERS
+              await page.on('request', (req) => {
+                const blacklist = fnBlock.split(',');
 
-              let domain = null;
-              const frags = req.url().split('/');
-              if (frags.length > 2) {
-                 domain = frags[2];
-              }
+                let domain = null;
+                const frags = req.url().split('/');
+                if (frags.length > 2) {
+                  domain = frags[2];
+                }
 
-              // Block request if a blacklisted domain is found
-              if (fnBlock && blacklist.some((blocked) => domain.indexOf(blocked) !== -1)) {
-                lgParams.debug += 'Snap blocked a request to ' + domain + '\n';
-                req.abort();
-              } else {
-                req.continue();
-              }
-            });
-          }
+                // Block request if a blacklisted domain is found
+                if (fnBlock && blacklist.some((blocked) => domain.indexOf(blocked) !== -1)) {
+                  lgParams.debug += 'Snap blocked a request to ' + domain + '\n';
+                  req.abort();
+                } else {
+                  req.continue();
+                }
+              });
+            }
 
-          if (fnDebug) {
-            // Log caught exceptions
-            page.on('error', (err) => {
-              lgParams.debug += err.toString();
-            });
+            if (fnDebug) {
+              // Log caught exceptions
+              page.on('error', (err) => {
+                lgParams.debug += err.toString();
+              });
 
-            // Log uncaught exceptions
-            page.on('pageerror', (err) => {
-              lgParams.debug += err.toString();
-            });
+              // Log uncaught exceptions
+              page.on('pageerror', (err) => {
+                lgParams.debug += err.toString();
+              });
 
-            // Forward all console output
-            page.on('console', msg => {
-              const errText = msg._args && msg._args[0] && msg._args[0]._remoteObject && msg._args[0]._remoteObject.value;
-              lgParams.debug += msg._type.padStart(7) +' '+ dump(errText) + '\n';
-              // for (let i = 0; i < msg.args().length; ++i) {
-              //   console.log(`${msg.args()[i]}`);
-              // }
-            });
-          }
+              // Forward all console output
+              page.on('console', msg => {
+                const errText = msg._args && msg._args[0] && msg._args[0]._remoteObject && msg._args[0]._remoteObject.value;
+                lgParams.debug += msg._type.padStart(7) +' '+ dump(errText) + '\n';
+                // for (let i = 0; i < msg.args().length; ++i) {
+                //   console.log(`${msg.args()[i]}`);
+                // }
+              });
+            }
 
-          // Use HTTP auth if needed (for testing staging envs)
-          if (fnAuthUser && fnAuthPass) {
-            await page.authenticate({ username: fnAuthUser, password: fnAuthPass });
-          }
+            // Use HTTP auth if needed (for testing staging envs)
+            if (fnAuthUser && fnAuthPass) {
+              await page.authenticate({ username: fnAuthUser, password: fnAuthPass });
+            }
 
-          // Set viewport dimensions
-          await page.setViewport({ width: fnWidth, height: fnHeight, deviceScaleFactor: fnScale });
+            // Set viewport dimensions
+            await page.setViewport({ width: fnWidth, height: fnHeight, deviceScaleFactor: fnScale });
 
-          // Set CSS Media
-          await page.emulateMediaType(fnMedia);
+            // Set CSS Media
+            await page.emulateMediaType(fnMedia);
 
-          // Compile cookies if present. We have to manually specify some extra
-          // info such as host/path in order to create a valid cookie.
-          let cookies = [];
-          if (!!fnCookies) {
-            fnCookies.split('; ').map((cookie) => {
-              let thisCookie = {};
-              const [name, value] = cookie.split('=');
+            // Compile cookies if present. We have to manually specify some extra
+            // info such as host/path in order to create a valid cookie.
+            let cookies = [];
+            if (!!fnCookies) {
+              fnCookies.split('; ').map((cookie) => {
+                let thisCookie = {};
+                const [name, value] = cookie.split('=');
 
-              thisCookie.url = fnUrl;
-              thisCookie.name = name;
-              thisCookie.value = value;
+                thisCookie.url = fnUrl;
+                thisCookie.name = name;
+                thisCookie.value = value;
 
-              cookies.push(thisCookie);
-            });
-          }
+                cookies.push(thisCookie);
+              });
+            }
 
-          // Set cookies.
-          cookies.forEach(async function(cookie) {
-            await page.setCookie(cookie).catch((err) => {
-              log.error(err);
-            });
-          })
+            // Set cookies.
+            cookies.forEach(async function(cookie) {
+              await page.setCookie(cookie).catch((err) => {
+                log.error(err);
+              });
+            })
 
-          // We need to load the HTML differently depending on whether it's HTML
-          // in the POST or a URL in the querystring.
-          if (fnUrl) {
-            await page.goto(fnUrl, {
-              waitUntil: ['load', 'networkidle0'],
-            });
-          } else {
-            await page.goto(`data:text/html,${fnHtml}`, {
-              waitUntil: ['load', 'networkidle0'],
-            });
-          }
+            // We need to load the HTML differently depending on whether it's HTML
+            // in the POST or a URL in the querystring.
+            if (fnUrl) {
+              await page.goto(fnUrl, {
+                waitUntil: ['load', 'networkidle0'],
+              });
+            } else {
+              await page.goto(`data:text/html,${fnHtml}`, {
+                waitUntil: ['load', 'networkidle0'],
+              });
+            }
 
-          // Add a conditional class indicating what type of Snap is happening.
-          // Websites can use this class to apply customizations before the final
-          // asset (PNG/PDF) is generated.
-          //
-          // Note: page.evaluate() is a stringified injection into the runtime.
-          //       any arguments you need inside this function block have to be
-          //       explicitly passed instead of relying on closure.
-          await page.evaluate((snapOutput) => {
-            document.documentElement.classList.add(`snap--${snapOutput}`);
-          }, fnOutput);
+            // Add a conditional class indicating what type of Snap is happening.
+            // Websites can use this class to apply customizations before the final
+            // asset (PNG/PDF) is generated.
+            //
+            // Note: page.evaluate() is a stringified injection into the runtime.
+            //       any arguments you need inside this function block have to be
+            //       explicitly passed instead of relying on closure.
+            await page.evaluate((snapOutput) => {
+              document.documentElement.classList.add(`snap--${snapOutput}`);
+            }, fnOutput);
 
-          // Output PNG or PDF?
-          if (fnOutput === 'png') {
-            // Output whole document or DOM fragment?
-            if (fnSelector) {
-              pngOptions.omitBackground = true;
+            // Output PNG or PDF?
+            if (fnOutput === 'png') {
+              // Output whole document or DOM fragment?
+              if (fnSelector) {
+                pngOptions.omitBackground = true;
 
-              // Make sure our selector is in the DOM.
-              await page.waitForSelector(fnSelector).then(async () => {
-                // Select the element from the DOM.
-                const fragment = await page.$(fnSelector).catch((err) => {
-                  throw ('Selector could not be targeted by Puppeteer');
+                // Make sure our selector is in the DOM.
+                await page.waitForSelector(fnSelector).then(async () => {
+                  // Select the element from the DOM.
+                  const fragment = await page.$(fnSelector).catch((err) => {
+                    throw ('Selector could not be targeted by Puppeteer');
+                  });
+
+                  // If an artificial delay was specified, wait for that amount of time.
+                  if (fnDelay) {
+                    await page.waitFor(fnDelay);
+                  }
+
+                  // Finally, take the screenshot.
+                  //
+                  // NOTE: in previous versions of Puppeteer we had difficulties
+                  // with PNG bounding boxes. We fixed it by switching to the a
+                  // manual method of clipping PNGs using fragment.boundingBox()
+                  // then executing page.screenshot().
+                  //
+                  // After a few Chrome/Puppeteer upgrades, the problem returned
+                  // in a slightly different form, again resolved by commenting
+                  // the code back out and using the "convenience" method again:
+                  // fragment.screenshot()
+                  //
+                  // It might be necessary to flip-flop between these two methods
+                  // from time to time so it's been left intact but commented out.
+                  //
+                  // @see https://humanitarian.atlassian.net/browse/SNAP-51
+                  await fragment.screenshot(pngOptions);
+
+                  // const elementBoundingBox = await fragment.boundingBox();
+                  // pngOptions.clip = {
+                  //   x: elementBoundingBox.x,
+                  //   y: elementBoundingBox.y,
+                  //   width: elementBoundingBox.width,
+                  //   height: elementBoundingBox.height,
+                  // };
+                  // await page.screenshot(pngOptions);
+                }).catch((err) => {
+                  throw ('Selector never appeared in the DOM');
                 });
+              } else {
 
                 // If an artificial delay was specified, wait for that amount of time.
                 if (fnDelay) {
@@ -495,34 +540,8 @@ app.post('/snap', [
                 }
 
                 // Finally, take the screenshot.
-                //
-                // NOTE: in previous versions of Puppeteer we had difficulties
-                // with PNG bounding boxes. We fixed it by switching to the a
-                // manual method of clipping PNGs using fragment.boundingBox()
-                // then executing page.screenshot().
-                //
-                // After a few Chrome/Puppeteer upgrades, the problem returned
-                // in a slightly different form, again resolved by commenting
-                // the code back out and using the "convenience" method again:
-                // fragment.screenshot()
-                //
-                // It might be necessary to flip-flop between these two methods
-                // from time to time so it's been left intact but commented out.
-                //
-                // @see https://humanitarian.atlassian.net/browse/SNAP-51
-                await fragment.screenshot(pngOptions);
-
-                // const elementBoundingBox = await fragment.boundingBox();
-                // pngOptions.clip = {
-                //   x: elementBoundingBox.x,
-                //   y: elementBoundingBox.y,
-                //   width: elementBoundingBox.width,
-                //   height: elementBoundingBox.height,
-                // };
-                // await page.screenshot(pngOptions);
-              }).catch((err) => {
-                throw ('Selector never appeared in the DOM');
-              });
+                await page.screenshot(pngOptions);
+              }
             } else {
 
               // If an artificial delay was specified, wait for that amount of time.
@@ -530,26 +549,17 @@ app.post('/snap', [
                 await page.waitFor(fnDelay);
               }
 
-              // Finally, take the screenshot.
-              await page.screenshot(pngOptions);
-            }
-          } else {
-
-            // If an artificial delay was specified, wait for that amount of time.
-            if (fnDelay) {
-              await page.waitFor(fnDelay);
+              await page.pdf(pdfOptions);
             }
 
-            await page.pdf(pdfOptions);
+            // Disconnect from Puppeteer process
+            await context.close();
+            await browser.disconnect();
           }
-
-          // Disconnect from Puppeteer process
-          await context.close();
-          await browser.disconnect();
-        }
-        catch (err) {
-          throw new Error(err);
-        }
+          catch (err) {
+            throw new Error(err);
+          }
+        });
       }
 
       /**

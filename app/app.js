@@ -370,7 +370,7 @@ app.post('/snap', [
           return cb(err);
         }
 
-        PUPPETEER_SEMAPHORE.use(async () => {
+        await PUPPETEER_SEMAPHORE.use(async () => {
           try {
             // Access the Chromium instance by either launching or connecting to
             // Puppeteer.
